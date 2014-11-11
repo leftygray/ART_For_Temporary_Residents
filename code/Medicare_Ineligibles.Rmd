@@ -1,0 +1,109 @@
+---
+title: "Surprising effectiveness of vaccines"
+author: "Richard T. Gray"
+date: "Sunday, September 14, 2014"
+output: 
+  word_document:
+      reference_docx: mystyles.docx
+---
+
+Using a modified version of my previously developed chlamydia vaccine model, Andrew Craig has developed a model for gonococcal vaccines. His investigations of the potential effectiveness of such a vaccine has shown a suprisingly low efficacy is required to eliminate gonorrhea  from a population. Initially I thought this was due to the sexual behaviour and partnershhip network in the model. As most individuals form long-term monogmous partnerships they are effectively protected for long time period. However, using a simple SIS model we can show these results are unsuprising. This Rmarkdown produced document describes the theoretical and numerical calculations to demonstrate this.
+
+### Theorectical calculations
+
+We use a simple SIS model with 100% effective vaccine and no waning. 
+
+<!--- Copy of Andrew's calculations --->
+
+Let $I$ be the proportion of the population infected. Then $S = 1- I$, and the number of people infected is 
+$$\frac{dI}{dt} = \beta (1-\epsilon)I(1-I)-\mu I$$ 
+where $\beta$ is the infectivity, $\epsilon$ is vaccine efficacy (with $\epsilon$ if there is no vaccine) and $\mu$ is the rate of recovery. Letting $\bar{I}$ be the value of $I$ where $\frac{dI}{dt} = 0$, we have 
+$$\beta(1-\epsilon)\bar{I}(1-\overline{I}) = \mu \bar{I}$$ 
+and either $\overline{I} = 0$ (the disease-free equilibrium) or
+$$ \beta(1-\epsilon)(1-\overline{I}) = \mu$$
+$$\longleftrightarrow \overline{I} = 1-\frac{\mu}{\beta} \cdot \frac{1}{1-\epsilon}.$$
+Setting $\epsilon = 0$ describes the no-vaccine scenario. Calling the no-vaccine equilibrium prevalence $\overline{I_0}$, we have 
+$$\frac{\mu}{\beta} = 1- \overline{I_0}$$.
+Susbstituting this into the equation for $\overline{I}$ gives 
+$$\overline{I} = 1-\frac{1-\overline{I_0}}{1-\epsilon} = \frac{\overline{I_0}-\epsilon}{1-\epsilon},$$
+which is equal to or less than zero when $\epsilon \geq \overline{I_0}$. This means the vaccine will remove the infection from the population if its efficacy is equal to or greater than the no-vaccine prevalence.
+
+### Numerical demonstration
+
+The theoretical calculations show that a partially efficacious vaccine can elimitate an infection from a population if the efficacy is greater than the endemic prevalence. The time taken for the infection extinction to occur is not shown. To investigate the change in prevalence over time we simulated the simple SIS model described above numerically.The model requires three input parameters to run. Table 1 shows the values we use for the simulations.
+
+```{r,echo=FALSE}
+# R code to define parameters for simulations
+beta <- 0.02900653  # Setup to give a 1.5% prevalence
+mu <- 1/35         # people sexually active for 35 years (15-50 years old)
+epsilon <- c(0,0.01,0.02,0.1,0.2)
+```
+
+**Table 1** - Model input parameters
+
+Parameter  | Value
+-----------|---------
+$\beta$    | `r signif(beta,2)`/yr
+$\mu$      | `r signif(mu,2)`/yr
+$\epsilon$ | `r 100*signif(epsilon[1],2)`-`r 100*signif(epsilon[5],2)`%
+
+```{r,echo = FALSE}
+# R code to run the simulations
+
+# Setup timesteps
+dt <- 0.1
+endtime <- 300
+vaccine_time <- 10
+
+t <- seq(from=0, to=endtime, by=dt)
+numtimes <- length(t)
+
+# Define initial conditions
+izero <- 1-mu/beta
+
+# Define ode function to calculate proportion next time step
+dinfects <- function(propInfected,betaVal,epsilonVal,muVal){
+  betaVal*(1-epsilonVal)*propInfected*(1-propInfected)-muVal*propInfected
+}
+
+# Simulate the model for each epsilon value - likely an inefficient way of doing this but works. 
+# Should use some fancy R functions or vectorisation 
+
+prop <- matrix(0,nrow=length(epsilon),ncol=numtimes) # initialize output array
+prop[,1] <- izero # insert initial conditions
+
+for (ii in 1:length(epsilon)){
+  
+  for (jj in 1:(numtimes-1)){
+    if (jj < vaccine_time/dt)
+      epsilonValue <- epsilon[1]
+    else
+      epsilonValue <- epsilon[ii]
+    
+    prop[ii,jj+1] <- prop[ii,jj] + dt*dinfects(prop[ii,jj],beta,epsilonValue,mu)  
+  }  
+}
+
+```
+
+The parameter values in Table 1 are set to give a prevalence of `r 100*signif(izero,2)`% in the population of adults who are sexually active for `r signif(1/mu,2)` years (equivalent to 15-50 year olds). Figure 1 shows how introducing a partially efficacous vaccine (10 years into the simulation) effects the prevalence in the population over time. The R code for this figure is available in the associated Rmarkdown file.
+
+
+**Figure 1** - Change in prevalence for different vaccine efficacies
+
+```{r, echo=FALSE}
+# Do a pretty plot of the output
+
+prev <- 100*prop # Convert to a percentage
+colours <- c(rainbow(4),"black") # Colours for lines
+
+# Set up plot
+plot(t,prev[1,],type="n",lwd=2,xlab="Years",ylab="Prevalence (%)",ylim=c(0,2*prev[1,1]))
+
+# Plot lines
+for (ii in 2:length(epsilon)){
+  lines(t,prev[ii,],col=colours[ii-1])
+}
+lines(t,prev[1,],col=colours[5]) # Overplot baseline simulation
+legend("topleft",c("1% efficacy","2% efficacy","10% efficacy","20% efficacy","No vaccine"),bty="n",cex=0.8, pt.cex = 1,inset=0.02,lwd=2,col=c(colours,"black"))
+```
