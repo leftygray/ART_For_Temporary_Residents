@@ -1,13 +1,13 @@
 ---
-title: "Surprising effectiveness of vaccines"
+title: "Impact of providing ART to Medicare ineligibles"
 author: "Richard T. Gray"
-date: "Sunday, September 14, 2014"
+date: Latest version - `r format(Sys.Date(), format="%B %d %Y")` <!---Add date automatically  using R whenever markdown is run! --->
 output: 
   word_document:
       reference_docx: mystyles.docx
 ---
 
-Using a modified version of my previously developed chlamydia vaccine model, Andrew Craig has developed a model for gonococcal vaccines. His investigations of the potential effectiveness of such a vaccine has shown a suprisingly low efficacy is required to eliminate gonorrhea  from a population. Initially I thought this was due to the sexual behaviour and partnershhip network in the model. As most individuals form long-term monogmous partnerships they are effectively protected for long time period. However, using a simple SIS model we can show these results are unsuprising. This Rmarkdown produced document describes the theoretical and numerical calculations to demonstrate this.
+This document summarises a simple methodolgy to calculate the impact of providing anti-retroviral therapy (ART) for free to people living with HIV (PLHIV) in Australia who are medicare ineligible.
 
 ### Theorectical calculations
 
