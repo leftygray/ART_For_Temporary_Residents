@@ -9,6 +9,8 @@ output:
 
 This document summarises a simple methodolgy to calculate the impact of providing anti-retroviral therapy (ART) for free to people living with HIV (PLHIV) in Australia who are medicare ineligible. 
 
+<!----Testing Git Cloning --->
+
 The R code for these calculations is available in the associated Rmarkdown file.
 
 ### Methodogy
@@ -37,7 +39,7 @@ Parameter  | Description | Value                                                
 -----------|-------------|--------------------------------------------------------------|-------|------------
 $\beta$    |             | `r signif(beta,2)`                                           |       |
 $\mu$      |             | `r signif(beta,2)`                                           |       |
-$\epsilon$ |             | ``r signif(beta,2)`                                          |       |
+$\epsilon$ |             | `r signif(beta,2)`                                          |       |
 
 ### Results
 
