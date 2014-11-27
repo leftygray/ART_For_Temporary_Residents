@@ -1,14 +1,19 @@
 ---
 title: "Impact of providing ART to Medicare ineligibles"
 author: "Richard T. Gray"
-date: Latest version - `r format(Sys.Date(), format="%B %d %Y")` <!---Add date automatically  using R whenever markdown is run! --->
-output: 
+-name: "Richard T. Gray"
+affiliation: The Kirby Institute
+date: Latest version - `r format(Sys.Date(), format="%B %d %Y")` <!---Add date automatically  using
+  R whenever markdown is run! --->
+output:
   word_document:
-      reference_docx: mystyles.docx
+    reference_docx: mystyles.docx
+bibliography: ../docs/medicare_ineligibles.bib    
 ---
 
-This document summarises a simple methodolgy to calculate the impact of providing anti-retroviral therapy (ART) for free to people living with HIV (PLHIV) in Australia who are medicare ineligible. 
+This document summarises a simple methodolgy to calculate the impact of providing anti-retroviral therapy (ART) for free to people living with HIV (PLHIV) in Australia who are medicare ineligible. This analysis uses data from the ATRAS observational study [@petoumenos2013australian]
 
+This document is written in dynamic format using R markdown v2 within R studio 0.98.1056 (using `r substr(R.Version()$version.string,1,15)`). Further details are available in the associated R markdown file which also contains the R code to produce all the results when the markdown is run. Code blocks have been supressed in the outputted document. <!--- The document is produced using R markdown within Rstudio with knitr, pandoc, Miktex producing the associated PDF output. To update the results the markdown file needs to be loaded in Rstudio or run using the tools separately. ---> 
 <!----Testing Git Cloning --->
 
 The R code for these calculations is available in the associated Rmarkdown file.
