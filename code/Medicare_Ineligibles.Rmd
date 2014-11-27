@@ -1,29 +1,31 @@
 ---
 title: "Impact of providing ART to Medicare ineligibles"
 author: "Richard T. Gray"
--name: "Richard T. Gray"
-affiliation: The Kirby Institute
-date: Latest version - `r format(Sys.Date(), format="%B %d %Y")` <!---Add date automatically  using
-  R whenever markdown is run! --->
+date: Latest version - `r format(Sys.Date(), format="%B %d %Y")` <!---Add date automatically  using R whenever markdown is run! --->
 output:
   word_document:
     reference_docx: mystyles.docx
-bibliography: ../docs/medicare_ineligibles.bib    
+bibliography: ../docs/medicare_ineligibles.bib
+csl: ../docs/plos.csl
 ---
 
-This document summarises a simple methodolgy to calculate the impact of providing anti-retroviral therapy (ART) for free to people living with HIV (PLHIV) in Australia who are medicare ineligible. This analysis uses data from the ATRAS observational study [@petoumenos2013australian]
+This document summarises a simple methodolgy to calculate the impact of providing anti-retroviral therapy (ART) for free to people living with HIV (PLHIV) in Australia who are medicare ineligible. This analysis uses data from the Australian HIV Obserbvational Database Temporary Residents Access Study (ATRAS) [@petoumenos2013australian].The R code for these calculations is available in the associated Rmarkdown file.
 
-This document is written in dynamic format using R markdown v2 within R studio 0.98.1056 (using `r substr(R.Version()$version.string,1,15)`). Further details are available in the associated R markdown file which also contains the R code to produce all the results when the markdown is run. Code blocks have been supressed in the outputted document. <!--- The document is produced using R markdown within Rstudio with knitr, pandoc, Miktex producing the associated PDF output. To update the results the markdown file needs to be loaded in Rstudio or run using the tools separately. ---> 
-<!----Testing Git Cloning --->
+This document is written in dynamic format using R markdown v2 within R studio 0.98.1056 (using R version 3.1.0). Further details are available in the associated R markdown file which also contains the R code to produce all the results when the markdown is run. Code blocks have been supressed in the output document. <!--- The document was currently produced using R markdown v2 within Rstudio using `r substr(R.Version()$version.string,1,15)`, knitr, pandoc, and Miktex (for Latex) for producing the associated PDF or Word Document output. To update the results the markdown file needs to be loaded in Rstudio or run using the tools separately. ---> 
 
-The R code for these calculations is available in the associated Rmarkdown file.
+***
 
-### Methodogy
+### Methodogy 
+
+This section summarises the methodology used for the calculations. A simple mathematical model is used to caluclate the change in population size over time and the number of new infections in partners of medicare ineligible people. Model details, assumptions and input parameters are described below.
 
 #### Demographics
 
-- summarise split in population
-- growth and change in population over time
+For this analysis we consider a population of PLHIV who are medicare ineligible with the characteristics of people in ATRAS (?). The size of this population in 2014 is ??. The overall population is split into heterosexual males, females, and males who are gay, bisexual or men who have sex whith men (GBM). We assume females are do not engage in sex work and the ATRAS population does not include people who inject drugs (PWID). The porportion of people in each of these populations is based on ATRAS data and assumed to be constant over time. 
+
+The number of medicare ineligibles can change over time with people becoming eligible for medicare provided ART and new temporary residents entering the population. The rates of entering the population and becoming medicare eligible are assumed to be constant.
+
+#### Clinical characteristics
 
 #### HIV transmission to partners
 
@@ -35,16 +37,33 @@ The R code for these calculations is available in the associated Rmarkdown file.
 
 ```{r,echo=FALSE}
 # R code to define parameters for simulations
-beta <- 0.02900653  
+
+# Demographics
+popsize <- 400; popsize_min <- 350;  popsize_max <- 450;
+num_enter <- 0.04 
+num_leave <- 0.2
+prop_f <- 0.4
+prop_m <- 0.4
+prop_g <- 1-prop_m-prop_f
+# Check proportions sums to one
+
 ```
 
 **Table 1** - Calculation input parameters 
 
 Parameter  | Description | Value                                                        | Range | References
 -----------|-------------|--------------------------------------------------------------|-------|------------
-$\beta$    |             | `r signif(beta,2)`                                           |       |
-$\mu$      |             | `r signif(beta,2)`                                           |       |
-$\epsilon$ |             | `r signif(beta,2)`                                          |       |
+$N$   | Overall population size in 2014 | `r popsize`| [`r popsize_min` - `r popsize_max`] |       
+$\pi$ | Rate of entry into population | `r num_enter` /yr | [`r popsize_min` - `r popsize_max`] |       
+$\mu$ | Rate people beome medicare eligible            | `r num_leave` /yr  | [`r popsize_min` - `r popsize_max`] |       
+$p_f$ | Proportion population female | `r prop_f` | [`r popsize_min` - `r popsize_max`] |
+$p_m$ | Proportion population male | `r prop_m` | [`r popsize_min` - `r popsize_max`] |
+$p_g$ | Proprtion population GBM | `r prop_g` | [`r popsize_min` - `r popsize_max`] |
+$\theta$ | | | |
+
+
+
+
 
 ### Results
 
