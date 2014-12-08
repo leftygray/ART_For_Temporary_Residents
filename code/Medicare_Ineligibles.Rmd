@@ -13,54 +13,112 @@ This document summarises a simple methodolgy to calculate the impact of providin
 
 This document is written in dynamic format using R markdown v2 within R studio 0.98.1056 (using R version 3.1.0). Further details are available in the associated R markdown file which also contains the R code to produce all the results when the markdown is run. Code blocks have been supressed in the output document. <!--- The document was currently produced using R markdown v2 within Rstudio using `r substr(R.Version()$version.string,1,15)`, knitr, pandoc, and Miktex (for Latex) for producing the associated PDF or Word Document output. To update the results the markdown file needs to be loaded in Rstudio or run using the tools separately. ---> 
 
-***
-
 ### Methodogy 
 
 This section summarises the methodology used for the calculations. A simple mathematical model is used to caluclate the change in population size over time and the number of new infections in partners of medicare ineligible people. Model details, assumptions and input parameters are described below.
 
+```{r,echo=FALSE}
+# Initialize parameters for running calculations
+startyear <- 2015
+datayears <- 4 # Number of years we have data
+datafile <- '' # File where all the data is stored
+numsims <- 0 # Number of 'simulations to run'
+```
+
 #### Demographics
 
-For this analysis we consider a population of PLHIV who are medicare ineligible with the characteristics of people in ATRAS (?). The size of this population in 2014 is ??. The overall population is split into heterosexual males, females, and males who are gay, bisexual or men who have sex whith men (GBM). We assume females are do not engage in sex work and the ATRAS population does not include people who inject drugs (PWID). The porportion of people in each of these populations is based on ATRAS data and assumed to be constant over time. 
+For this analysis we consider a population of PLHIV who are medicare ineligible with the characteristics of people in ATRAS ([@petoumenos2013australian]). The size of this population in 2014 is ??. The overall population is split into heterosexual males, females, and males who are gay, bisexual or men who have sex whith men (GBM). We assume females do not engage in sex work and the population does not include people who inject drugs (PWID). The porportion of people in each of these populations is based on ATRAS data and assumed to be constant over time. This comparmentalisation of the population is used to distinguish the risk of HIV infection rather than treatment 
 
-The number of medicare ineligibles can change over time with people becoming eligible for medicare provided ART and new temporary residents entering the population. The rates of entering the population and becoming medicare eligible are assumed to be constant.
+The number of medicare ineligibles can change over time with people becoming eligible for medicare provided ART and new temporary residents entering the population. This movement is represented by a constant rate - which is positive for a growing population and negative for a declining population). In ATRAS aproximately 20% of people become medicare eligible and leave the population each year, this would be lower bound on the rate of population change.
 
 #### Clinical characteristics
 
+The main aim of this analysis is to investigate the impact on HIV transmission of providing all medicare ineligible people in ATRAS with ART. For the calculations we simply consider the proportion of the population taking ART and the proportion of those on ART with viral suppression. Both of these inputs can change over time based on the ATRAS data. We do not consider different proportions for each population group (BUT WE CAN IF ATRAS HAS THIS DATA). The most recent data value is used for future projections  
+
 #### HIV transmission to partners
 
-- summarise calculations for each year
+
+
+Assumptions used in the calculations:
+* All sexual partners are HIV negative.
+* HIV transmission only occurs through sexual intercourse.
+* There is no difference in sexual behaviour between those on and off ART. Hence, the only factor affecting HIV transmission is ART use and viral suppression.
+* Those with unsuppressed virus have the same transmission risk as those not taking ART.
+* Females and males have the same number of partners, sexual acts, and condom use on average.
+* Females and males have the same sexual behaviour as males and females in the general heterosexual population in Australia.
+* Behavioural and transmission parameters are assumed constant over time.
 
 #### Parameter table
-
-- incoporate a full parmater table 
+Table 1 lists all input parameters and their values and ranges.
 
 ```{r,echo=FALSE}
-# R code to define parameters for simulations
+# R code to define parameters for simulations. These are defined as uniform ranges [minimum, best guess, maximum]
+# Next version may read this is from an external file.
 
 # Demographics
-popsize <- 400; popsize_min <- 350;  popsize_max <- 450;
-num_enter <- 0.04 
-num_leave <- 0.2
-prop_f <- 0.4
-prop_m <- 0.4
-prop_g <- 1-prop_m-prop_f
-# Check proportions sums to one
+popsize <- c(300,400,500)
+pop_growth <- c(0.8,1,1.1)
+prop_f <- c(0.3,0.4,0.5) 
+prop_m <- c(0.3,0.4,0.5)
+# porportion of GBM prop_g is calculated internally so that the proportions add up to 1.
+
+# Clinical parameters
+# As these values can change of time we use hardcoded data values from ATRAS to track their change over time. 
+# Uncertainty or variation in these values is assumed to be the same over time and have the same relative factor.
+# Next version may read this is from an external file.
+
+prop_art_base <- c(0.55, 0.8, 0.95, 0.96) # Hard coded
+prop_vs_base <- c(0.8, 0.92, 0.95, 0.95) # Hard coded
+
+prop_art_factor <- c(0.75, 1.25) # Maximum of 1. Maybe change to proportion not on ART so we don't have this problem
+prop_vs_factor <- c(0.75, 1.25)  # Maximum of 1. Maybe change to proportion not viral suppressed so we don't have this problem
+
+# Behavioural paramters
+# Assumed to remain cosntant over time
+
+heteroacts <- c(40, 50, 60)      # Number of heterosexual acts
+heterocondom <- c(0.1,0.2,0.3)    # Proportion of heterosexual acts where condoms have been used 
+gbmacts <- c(70,80,90)           # Number of homosexual acts
+gbmcondom <- c(0.5, 0.6, 0.7)    # Proportion of homosexual acts where condoms have been used
+
+# HIV transmission parameters
+# Assumed to remain cosntant over time
+
+betaf <- c(0.0002, 0.0004, 0.001)  # Female to male per unprotected act  transmission probability
+betam <- c(0.0002, 0.0008,0.0015)  # Male to female per unprotected act  transmission probability
+betag <- c(0.005, 0.01,0.02)       # GBM male to male per unprotected act transmission probability
+
+epsilon_condom <- c(0.8, 0.9, 0.99) # Efficacy of condoms
+epsilon_art <- c(0.9, 0.95, 0.99)   # Reduction in HIV infectiouness due to viral suppression
 
 ```
 
-**Table 1** - Calculation input parameters 
+**Table 1** - Calculation input parameters. Note parameter values and ranges are simple placeholders at the moment. References also need to be found and inserted. 
 
 Parameter  | Description | Value                                                        | Range | References
 -----------|-------------|--------------------------------------------------------------|-------|------------
-$N$   | Overall population size in 2014 | `r popsize`| [`r popsize_min` - `r popsize_max`] |       
-$\pi$ | Rate of entry into population | `r num_enter` /yr | [`r popsize_min` - `r popsize_max`] |       
-$\mu$ | Rate people beome medicare eligible            | `r num_leave` /yr  | [`r popsize_min` - `r popsize_max`] |       
-$p_f$ | Proportion population female | `r prop_f` | [`r popsize_min` - `r popsize_max`] |
-$p_m$ | Proportion population male | `r prop_m` | [`r popsize_min` - `r popsize_max`] |
-$p_g$ | Proprtion population GBM | `r prop_g` | [`r popsize_min` - `r popsize_max`] |
-$\theta$ | | | |
+**Demographic parameters** | | | |
+$N$   | Overall population size in 2014 | `r popsize[2]`| [`r popsize[1]` - `r popsize[3]`] |       
+$\pi$ | Rate of entry into population | `r pop_growth[2]` /yr | [`r pop_growth[1]` - `r pop_growth[3]`] |           
+$p_f$ | Proportion population female | `r prop_f[2]` | [`r prop_f[1]` - `r prop_f[3]`] |
+$p_m$ | Proportion population male | `r prop_m[2]` | [`r prop_m[1]` - `r prop_m[3]`] |
+$p_g$ | Proprtion population GBM | $1-p_f-p_m$ | Depends on $p_f$ and $p_m$ values |
+**Clinical parameters** | | | |
+$\theta$ | Proportion of population taking ART | ATRAS data| Multiplicative factor [`r prop_art_factor[1]` - `r prop_art_factor[2]`]|
+$\psi$ | Proportion of population taking ART | ATRAS data| Multiplicative factor [`r prop_vs_factor[1]` - `r prop_vs_factor[2]`]|
+**HIV behavioural parameters** | | | |
+$a_h$ | Annual number of heterosexual acts between females and males| `r heteroacts[2]` | [`r heteroacts[1]` - `r heteroacts[3]`] |
+$c_h$ | Proportion of heterosexual acts protected with a condom | `r heterocondom[2]` | [`r heterocondom[1]` - `r heterocondom[3]`] |
+$a_g$ | Annual number of sexual acts with other GBM| `r gbmacts[2]` | [`r gbmacts[1]` - `r gbmacts[3]`]|
+$c_g$ | Proportion of GBM acts protected with a condom| `r gbmcondom[2]`| [`r gbmcondom[1]` - `r gbmcondom[3]`]|
+**HIV transmission paramaters** | | | |
+$\beta_f$ | Per act transmission probability from females to males | `r betaf[2]`| [`r betaf[1]` - `r betaf[3]`]|
+$\beta_m$ | Per act transmission probability from males to females| `r betam[2]`| [`r betam[1]` - `r betam[3]`]|
+$\beta_g$ | Per act transmission probability between GBM| `r betag[2]` | [`r betag[1]` - `r betag[3]`]|
+$\epsilon_c$ | Efficacy of condoms | `r epsilon_condom[2]`| [`r epsilon_condom[1]` - `r epsilon_condom[3]`]| 
+$\epsilon_{ART}$ | Efficacy of ART in preventing HIV transmission if virus is suppressed | `r epsilon_art[2]`| [`r epsilon_art[1]` - `r epsilon_art[3]`]|
 
+#### Calculations
 
 
 
