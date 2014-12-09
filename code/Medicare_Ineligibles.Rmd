@@ -27,9 +27,11 @@ numsims <- 0 # Number of 'simulations to run'
 
 #### Demographics
 
-For this analysis we consider a population of PLHIV who are medicare ineligible with the characteristics of people in ATRAS ([@petoumenos2013australian]). The size of this population in 2014 is ??. The overall population is split into heterosexual males, females, and males who are gay, bisexual or men who have sex whith men (GBM). We assume females do not engage in sex work and the population does not include people who inject drugs (PWID). The porportion of people in each of these populations is based on ATRAS data and assumed to be constant over time. This comparmentalisation of the population is used to distinguish the risk of HIV infection rather than treatment coverage and adherence.
+For this analysis we consider a population of PLHIV who are medicare ineligible with the characteristics of people in ATRAS [@petoumenos2013australian]. The overall population is split into heterosexual malesand females, and males who are gay, bisexual or men who have sex whith men (GBM). We assume females do not engage in sex work and the population does not include people who inject drugs (PWID). The porportion of people in each of these populations is based on ATRAS data and assumed to be constant over time. This comparmentalisation of the population is used to distinguish the risk of HIV infection rather than treatment coverage and adherence.
 
-The number of medicare ineligibles can change over time with people becoming eligible for medicare provided ART and new temporary residents entering the population. This movement is represented by a constant rate - which is positive for a growing population and negative for a declining population). In ATRAS aproximately 20% of people become medicare eligible and leave the population each year, this would be lower bound on the rate of population change.
+The number of medicare ineligibles can change over time with people becoming eligible for medicare provided ART and new temporary residents entering the population. This movement is represented by a constant rate $\pi$ (which is positive for a growing population and negative for a declining population). In ATRAS aproximately 20% of people become medicare eligible and leave the population each year, this would be lower bound on the rate of population change. Letting $N(y)$ equal the total population size in year $y$, the number of medicare ineligible people in the population is then given by
+$$N(y) = N(0)(1+\pi)^n,$$
+where $n$ is the number of years of calculation.
 
 #### Clinical characteristics
 
@@ -37,10 +39,12 @@ The main aim of this analysis is to investigate the impact on HIV transmission o
 
 #### HIV transmission to partners
 
-HIV transmission occurs through sexual intercourse between medicare ineligibles and their sexual partners. We assume initiating ART does not change sexual behaviour and the number of partnerships, sexual acts per partnership, and the level of condom use is similar to the overall Mediciare eligible population in Australia. We do not consider onward transmission from newly infected partners. As the sexual behaviour for the ART and non-ART population is the same, we use a simple risk equation model with behavioural parameters set to reflect the annual risk of tranmsmission. 
+HIV transmission occurs through sexual intercourse between medicare ineligibles and their sexual partners. We assume initiating ART does not change sexual behaviour and the number of partnerships, sexual acts per partnership, and the level of condom use is similar to the overall Medicare eligible population in Australia. We also do not consider onward transmission from newly infected partners. As the sexual behaviour for the ART and non-ART population is the same, we use a simple risk equation model with behavioural parameters set to reflect the overall annual risk of tranmsmission rather than incorporating different partnership types and more complex sexual behaviours. 
 
 Key assumptions:
+
 * All sexual partners are HIV negative.
+* Homogeneous mixing is assumed which means partnerships are not maintained from year to year.
 * HIV transmission only occurs through sexual intercourse.
 * There is no difference in sexual behaviour between those on and off ART. Hence, the only factor affecting HIV transmission is ART use and viral suppression.
 * Those with unsuppressed virus have the same transmission risk as those not taking ART.
@@ -51,7 +55,7 @@ Key assumptions:
 
 #### Costs associated with ART provision
 
-Our analysis includes an estimate of the annual cost of providing ART, care and support to Medicare ineligibles and their partners who become infected. We obtained estimates of these costs using previous work for Australian settings [Cite Karen Schneider's paper]. By summing all costs associated with providing ART to Medicare ineligibles, we estimate the cost per infection averted. 
+Our analysis includes an estimate of the annual cost of providing ART, care and support to Medicare ineligibles and their partners who become infected. We obtained estimates of these costs using previous work for Australian settings [@schneider2014cost]. By summing all costs associated with providing ART to Medicare ineligibles and the average 'lifetime' cost of providing care and support to PLHIV for their infected partners, we estimate the cost per infection averted. 
 
 #### Parameter table
 Table 1 lists all input parameters and their values and ranges.
@@ -98,9 +102,9 @@ epsilon_art <- c(0.9, 0.95, 0.99)   # Reduction in HIV infectiouness due to vira
 
 # Healthcare costs
 
-carecost <- 0
-artcost <- 0
-lifecost <- 0
+carecost <- c(0,0,0)
+artcost <- c(0,0,0)
+lifecost <- c(0,0,0)
 
 ```
 
@@ -109,7 +113,7 @@ lifecost <- 0
 Parameter  | Description | Value                                                        | Range | References
 -----------|-------------|--------------------------------------------------------------|-------|------------
 **Demographic parameters** | | | |
-$N$   | Overall population size in 2014 | `r popsize[2]`| [`r popsize[1]` - `r popsize[3]`] |       
+$N(0)$   | Overall population size in initial year (2014) | `r popsize[2]`| [`r popsize[1]` - `r popsize[3]`] |       
 $\pi$ | Rate of entry into population | `r pop_growth[2]` /yr | [`r pop_growth[1]` - `r pop_growth[3]`] |           
 $p_f$ | Proportion population female | `r prop_f[2]` | [`r prop_f[1]` - `r prop_f[3]`] |
 $p_m$ | Proportion population male | `r prop_m[2]` | [`r prop_m[1]` - `r prop_m[3]`] |
@@ -119,9 +123,9 @@ $\theta$ | Proportion of population taking ART | ATRAS data| Multiplicative fact
 $\psi$ | Proportion of population taking ART | ATRAS data| Multiplicative factor [`r prop_vs_factor[1]` - `r prop_vs_factor[2]`]|
 **HIV behavioural parameters** | | | |
 $a_h$ | Annual number of heterosexual acts between females and males| `r heteroacts[2]` | [`r heteroacts[1]` - `r heteroacts[3]`] |
-$c_h$ | Proportion of heterosexual acts protected with a condom | `r heterocondom[2]` | [`r heterocondom[1]` - `r heterocondom[3]`] |
+$p^c_h$ | Proportion of heterosexual acts protected with a condom | `r heterocondom[2]` | [`r heterocondom[1]` - `r heterocondom[3]`] |
 $a_g$ | Annual number of sexual acts with other GBM| `r gbmacts[2]` | [`r gbmacts[1]` - `r gbmacts[3]`]|
-$c_g$ | Proportion of GBM acts protected with a condom| `r gbmcondom[2]`| [`r gbmcondom[1]` - `r gbmcondom[3]`]|
+$p^c_g$ | Proportion of GBM acts protected with a condom| `r gbmcondom[2]`| [`r gbmcondom[1]` - `r gbmcondom[3]`]|
 **HIV transmission paramaters** | | | |
 $\beta_f$ | Per act transmission probability from females to males | `r betaf[2]`| [`r betaf[1]` - `r betaf[3]`]|
 $\beta_m$ | Per act transmission probability from males to females| `r betam[2]`| [`r betam[1]` - `r betam[3]`]|
@@ -129,42 +133,42 @@ $\beta_g$ | Per act transmission probability between GBM| `r betag[2]` | [`r bet
 $\epsilon_c$ | Efficacy of condoms | `r epsilon_condom[2]`| [`r epsilon_condom[1]` - `r epsilon_condom[3]`]| 
 $\epsilon_{ART}$ | Efficacy of ART in preventing HIV transmission if virus is suppressed | `r epsilon_art[2]`| [`r epsilon_art[1]` - `r epsilon_art[3]`]|
 **Healthcare costs** | | | |
-$e_c$ | Average annual healthcare for cost for PLHIV| | |
-$e_{ART}$ | Avergae annual cost of providing ART| | |
-$e_l$ | Average lifetime cost of providing healthcare (including ART) post infection | | |
+$c_{care}$ | Average annual healthcare for cost for PLHIV| `r carecost[2]`| [`r carecost[1]` - `r carecost[3]`] |
+$c_{ART}$ | Avergae annual cost of providing ART| `r artcost[2]`| [`r artcost[1]` - `r artcost[3]`] |
+$c_{life}$ | Average lifetime cost of providing healthcare (including ART) post infection | `r lifecost[2]`| [`r lifecost[1]` - `r lifecost[3]`] |
 
 #### Calculations for new infections and costs
 
-The overall number of new infections per year is calculated by summing the number of new infections caused by each population group; i.e.,
-$$I(t) = I_f(t) + I_m(t) + I_g(t)$$.
+The overall number of new infections per year is calculated by summing the number of new infections caused by each population group; i.e., $$I(y) = I_f(y) + I_m(y) + I_g(y),$$ where $y$ is the given year. 
 
-Letting the index $x$ represent one of the populations groups and ignoring time for the time being, the probability of HIV transmission without ART is given by 
-$$\beta'_x = a_x(1-c_x)\beta_x + a_x c_x (1- \epsilon_c)\beta_x$$ or $$\beta'_x = a_x (1-c_x\episilon_x)\beta_x$$. For $x = f$, $m$ the number of acts and condom are equal and given by the index $h$. Similarly we can incorporate the prevention effects of treatment and suppressed virus. For a given population, 
-$$I_x = (1-\theta)\beta'_x + \theta(1-\psi)\beta'_x + \theta\psi\(1-\epislon_{ART})\beta'_x$$ as ineffective treatmemnt has the same transmission probability as no treatment. After some algebra this gives
-$$I_x = (1-\theta\psi\epsilon_{ART})\beta'_x$$.
+Letting the index $x$ represent one of the populations groups (and droping $y$ for the time being), the probability of HIV transmission without ART is given by 
+$$\beta'_x = a_x(1-p^c_x)\beta_x + a_x p^c_x (1- \epsilon_c)\beta_x$$ or 
+$$\beta'_x = a_x (1-p^c_x\epsilon_x)\beta_x.$$ For $x = f$, $m$ the number of acts and condom use are equal and given by the index $h$. Similarly we can incorporate the prevention effects of treatment and suppressed virus. For a given population, 
+$$I_x = (1-\theta)\beta'_x + \theta(1-\psi)\beta'_x + \theta\psi(1-\epsilon_{ART})\beta'_x$$ 
+as ineffective treatment (resulting in unsuppressed virus) has the same transmission probability as no treatment. After some algebra this gives
+$$I_x = (1-\theta\psi\epsilon_{ART})\beta'_x.$$
 
-Adding all the population terms together and substituting in $\beta'_x$ gives (after some algebra) the overall risk equation for new infections,
-$$I(t) = [a_h(1-c_h\epsilon_c)(\beta_f + \beta_m) + a_g(1-c_g\epsilon_c)\beta_g](1-\theta(t)\psi(t)\epislon_{ART})$$.The cumulative number of infections over $y$ years is then equal to
-$$\Sigma = \sum_{i = 1}^y I(y)$$.
+Adding all the population terms together and substituting in the equation for $\beta'_x$ gives (after some algebra) the overall risk equation for the number of new infections in a given year $y$,
+$$I(y) = [a_h(1-p^c_h\epsilon_c)(\beta_f + \beta_m) + a_g(1-p^c_g\epsilon_c)\beta_g](1-\theta(y)\psi(y)\epsilon_{ART}).$$ 
+The cumulative number of new infections in partners of medicare ineligibles over $y$ years is then equal to
+$$\Sigma = \sum_{y = 1}^{years} I(y).$$
 
 The total cost of providing ART and healthcare to Medicare ineligibles and infected partners is then given by
-$${\rm Total spending} = \sum(N(t)(1-\theta)e_c + N(t)\theta(e_c + e_{ART})) + \Sigma e_l$$.
-
+$$S = \left[\sum_{y = 1}^{years} (N(y)(c_{care} + \theta c_{ART})\right] + \Sigma c_{life}.$$
 
 ### Results
 
-```{r,echo = FALSE}
-# R code to run the simulations
-```
+Results amd figures will be generated once final methodology is finalized. 
 
-**Figure 1** - Change in new infections.
+```{r,echo = FALSE}
+
+# R code to run the simulations and actually does the calculations
+```
 
 ```{r, echo=FALSE}
+### Discussion
 # Do some pretty plots of the output
 ```
-
-### Discussion
-
 
 ### References
 
