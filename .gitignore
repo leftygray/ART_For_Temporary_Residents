@@ -36,11 +36,14 @@
 ehthumbs.db
 Thumbs.db
 
-####################################
-
-# Local files to ignore#
-########################
+#########################################
+# Local files to ignore
+# Use echo "file" >> .gitignore to append
+#########################################
 
 /Evernote Note.url
 code/.Rhistory
 code/.RData
+docs/Medicare_Ineligibles_Latest_Run.docx - Shortcut.lnk
+
+docs/Medicare_Ineligibles_methods-2014-12-09.docx
