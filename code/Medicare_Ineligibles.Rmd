@@ -13,6 +13,16 @@ This document summarises a simple methodolgy to calculate the impact of providin
 
 This document is written in dynamic format using R markdown v2 within R studio 0.98.1056 (using R version 3.1.0). Further details are available in the associated R markdown file which also contains the R code to produce all the results when the markdown is run. Code blocks have been supressed in the output document. <!--- The document was currently produced using R markdown v2 within Rstudio using `r substr(R.Version()$version.string,1,15)`, knitr, pandoc, and Miktex (for Latex) for producing the associated PDF or Word Document output. To update the results the markdown file needs to be loaded in Rstudio or run using the tools separately. ---> 
 
+```{r ,echo = FALSE}
+# Before we get started set some overarching variables so we can rerun results instead of generating new ones if necessary
+
+# output_folder <- '../output/'
+# var_file <- '' # Set to empty to run things a fresh. Manually enter file name to regenerate old results
+# save_vars <- TRUE 
+# use_seed <- FALSE
+```
+
+
 ### Methodogy 
 
 This section summarises the methodology used for the calculations. A simple mathematical model is used to caluclate the change in population size over time and the number of new infections in partners of medicare ineligible people. Model details, assumptions and input parameters are described below.
@@ -21,17 +31,25 @@ This section summarises the methodology used for the calculations. A simple math
 # Initialize parameters for running calculations
 startyear <- 2015
 datayears <- 4 # Number of years we have data
+runyears <- 5  # Number of years to run the model
 datafile <- '' # File where all the data is stored
-numsims <- 0 # Number of 'simulations to run'
+numsims <- 10 # Number of 'simulations to run'
+
+# Generate and store RNG seeds so we can rerun things exactly if we want to
+currseed <- NULL
+if (exists(".Random.seed"))  currseed <- .Random.seed
+
+#if (!is.null(oldseed))
+#    .Random.seed <- currseed
+
 ```
 
 #### Demographics
 
-For this analysis we consider a population of PLHIV who are medicare ineligible with the characteristics of people in ATRAS [@petoumenos2013australian]. The overall population is split into heterosexual malesand females, and males who are gay, bisexual or men who have sex whith men (GBM). We assume females do not engage in sex work and the population does not include people who inject drugs (PWID). The porportion of people in each of these populations is based on ATRAS data and assumed to be constant over time. This comparmentalisation of the population is used to distinguish the risk of HIV infection rather than treatment coverage and adherence.
+For this analysis we consider a population of PLHIV who are medicare ineligible with the characteristics of people in ATRAS [@petoumenos2013australian]. The overall population is split into heterosexual males and females, and males who are gay, bisexual or men who have sex with men (GBM). We assume females do not engage in sex work and the population does not include people who inject drugs (PWID). The porportion of people in each of these populations is based on ATRAS data and assumed to be constant over time. This comparmentalisation of the population is used to distinguish the risk of HIV infection rather than treatment coverage and adherence.
 
 The number of medicare ineligibles can change over time with people becoming eligible for medicare provided ART and new temporary residents entering the population. This movement is represented by a constant rate $\pi$ (which is positive for a growing population and negative for a declining population). In ATRAS aproximately 20% of people become medicare eligible and leave the population each year, this would be lower bound on the rate of population change. Letting $N(y)$ equal the total population size in year $y$, the number of medicare ineligible people in the population is then given by
-$$N(y) = N(0)(1+\pi)^n,$$
-where $n$ is the number of years of calculation.
+$$N(y) = N(0)(1+\pi)^y,$$.
 
 #### Clinical characteristics
 
@@ -39,7 +57,7 @@ The main aim of this analysis is to investigate the impact on HIV transmission o
 
 #### HIV transmission to partners
 
-HIV transmission occurs through sexual intercourse between medicare ineligibles and their sexual partners. We assume initiating ART does not change sexual behaviour and the number of partnerships, sexual acts per partnership, and the level of condom use is similar to the overall Medicare eligible population in Australia. We also do not consider onward transmission from newly infected partners. As the sexual behaviour for the ART and non-ART population is the same, we use a simple risk equation model with behavioural parameters set to reflect the overall annual risk of tranmsmission rather than incorporating different partnership types and more complex sexual behaviours. 
+HIV transmission occurs through sexual intercourse between medicare ineligibles and their sexual partners. We assume initiating ART does not change sexual behaviour and the number of partnerships, sexual acts per partnership, and the level of condom use is similar to the overall Medicare eligible population in Australia. We also do not consider onward transmission from newly infected partners. As the sexual behaviour for the ART and non-ART population is the same, we use a simple risk equation model with behavioural parameters set to reflect the overall annual risk of transmission rather than incorporating different partnership types and more complex sexual behaviours. 
 
 Key assumptions:
 
@@ -65,7 +83,7 @@ Table 1 lists all input parameters and their values and ranges.
 # Next version may read this is from an external file.
 
 # Demographics
-popsize <- c(300,400,500)
+popsize <- c(300,400,500); popsizeMatrix <- matrix(runif(numsims,popsize[1],popsize[2]),numsims,runyears) 
 pop_growth <- c(0.8,1,1.1)
 prop_f <- c(0.3,0.4,0.5) 
 prop_m <- c(0.3,0.4,0.5)
