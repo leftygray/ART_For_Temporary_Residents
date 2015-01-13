@@ -80,15 +80,22 @@ Table 1 lists all input parameters and their values and ranges.
 
 ```{r,echo=FALSE}
 # R code to define parameters for simulations. These are defined as uniform ranges [minimum, best guess, maximum]
-# Next version may read this is from an external file.
+# Next version may read this is from an external file. Samples are randomly obtained from these ranges and put into
+#matrices to aid vectorised calculations
 
 # Demographics
-popsize <- c(300,400,500); popsizeMatrix <- matrix(runif(numsims,popsize[1],popsize[2]),numsims,runyears) 
-pop_growth <- c(0.8,1,1.1)
-prop_f <- c(0.3,0.4,0.5) 
-prop_m <- c(0.3,0.4,0.5)
+popsize <- c(300,400,500);   
+pop_growth <- c(0.8,1,1.1); 
+prop_f <- c(0.3,0.4,0.5);   
+prop_m <- c(0.3,0.4,0.5);   
 # porportion of GBM prop_g is calculated internally so that the proportions add up to 1.
 
+# Convert to matrices
+popsizeMatrix <- matrix(runif(numsims,popsize[1],popsize[3]),numsims,runyears)
+pop_growthMatrix <- matrix(runif(numsims,pop_growth[1],pop_growth[3]),numsims,runyears)
+prop_fMatrix <- matrix(runif(numsims,prop_f[1],prop_f[3]),numsims,runyears)
+prop_mMatrix <- matrix(runif(numsims,prop_m[1],prop_m[3]),numsims,runyears)
+ 
 # Clinical parameters
 # As these values can change of time we use hardcoded data values from ATRAS to track their change over time. 
 # Uncertainty or variation in these values is assumed to be the same over time and have the same relative factor.
@@ -97,8 +104,30 @@ prop_m <- c(0.3,0.4,0.5)
 prop_art_base <- c(0.55, 0.8, 0.95, 0.96) # Hard coded
 prop_vs_base <- c(0.8, 0.92, 0.95, 0.95) # Hard coded
 
-prop_art_factor <- c(0.75, 1.25) # Maximum of 1. Maybe change to proportion not on ART so we don't have this problem
-prop_vs_factor <- c(0.75, 1.25)  # Maximum of 1. Maybe change to proportion not viral suppressed so we don't have this problem
+prop_art_factor <- c(0.75, 1.25) # Uncertainty in proportion not on ART so we don't get a proportion greater than 1 
+prop_vs_factor <- c(0.75, 1.25)  # Uncertainty in proportion not on ART so we don't get a proportion greater than 1 
+
+# Convert to matrices. This is done by first converting proportions on ART and with viral suppression to vectors of equal length 
+# to number of simulation years and then inverting twice so the uncertianty factor does not produce a value great than 1. If the
+# number of simulations years is greater than the number of data values the final data value is assumed to remain constant.
+
+prop_art_baseVec <- prop_art_base[length(prop_art_base)] * rep(1,runyears)
+prop_art_baseVec[1:length(prop_art_base)] <- prop_art_base  # Replace start of vector with data values
+
+prop_vs_baseVec <- prop_vs_base[length(prop_vs_base)] * rep(1,runyears)
+prop_vs_baseVec[1:length(prop_vs_base)] <- prop_vs_base  # Replace start of vector with data values
+
+# Now create matrix of values by looping over number of simulations
+prop_art_baseMatrix <- matrix(0,numsims,runyears)
+for (ii in 1:numsims) {
+   # Sample from multiplicative factor
+  tempFactor_art <- runif(1,prop_art_factor[1],prop_art_factor[2]) 
+  tempFactor_vs <- runif(1,prop_vs_factor[1],prop_vs_factor[2])
+  
+  # Do double inversion and store in the row
+  prop_art_baseMatrix[ii,] <- 1-tempFactor_art * (1-prop_art_baseVec)
+  prop_vs_factorMatrix[ii,] <- 1-tempFactor_vs * (1-prop_vs_factorVec)
+}
 
 # Behavioural paramters
 # Assumed to remain cosntant over time
@@ -107,6 +136,12 @@ heteroacts <- c(40, 50, 60)      # Number of heterosexual acts
 heterocondom <- c(0.1,0.2,0.3)    # Proportion of heterosexual acts where condoms have been used 
 gbmacts <- c(70,80,90)           # Number of homosexual acts
 gbmcondom <- c(0.5, 0.6, 0.7)    # Proportion of homosexual acts where condoms have been used
+
+# Convert to matrices
+heteroactsMatrix <- matrix(runif(numsims,heteroacts[1],heteroacts[3]),numsims,runyears)
+heterocondomMatrix <- matrix(runif(numsims,heterocondom[1],heterocondom[3]),numsims,runyears)
+gbmactsMatrix <- matrix(runif(numsims,gbmacts[1],gbmacts[3]),numsims,runyears)
+gbmcondomMatrix <- matrix(runif(numsims,gbmcondom[1],gbmcondom[3]),numsims,runyears)
 
 # HIV transmission parameters
 # Assumed to remain cosntant over time
@@ -117,6 +152,14 @@ betag <- c(0.005, 0.01,0.02)       # GBM male to male per unprotected act transm
 
 epsilon_condom <- c(0.8, 0.9, 0.99) # Efficacy of condoms
 epsilon_art <- c(0.9, 0.95, 0.99)   # Reduction in HIV infectiouness due to viral suppression
+
+# Convert to matrices
+betafMatrix <- matrix(runif(numsims,betaf[1],betaf[3]),numsims,runyears)
+betamMatrix <- matrix(runif(numsims,betam[1],betam[3]),numsims,runyears)
+betagMatrix <- matrix(runif(numsims,betag[1],betag[3]),numsims,runyears)
+
+epsilon_condomMatrix <- matrix(runif(numsims,epsilon_condom[1],epsilon_condom[3]),numsims,runyears)
+epsilon_artMatrix <- matrix(runif(numsims,epsilon_art[1],epsilon_art[3]),numsims,runyears)
 
 # Healthcare costs
 
