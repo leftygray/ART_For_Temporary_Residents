@@ -5,6 +5,7 @@ date: Latest version - `r format(Sys.Date(), format="%B %d %Y")` <!---Add date a
 output:
   word_document:
     reference_docx: mystyles.docx
+    pandoc_args: [--output="./output/Medicare_Ineligbles.docx"]
 bibliography: ../docs/medicare_ineligibles.bib
 csl: ../docs/plos.csl
 ---
@@ -13,10 +14,10 @@ This document summarises a simple methodolgy to calculate the impact of providin
 
 This document is written in dynamic format using R markdown v2 within R studio 0.98.1056 (using R version 3.1.0). Further details are available in the associated R markdown file which also contains the R code to produce all the results when the markdown is run. Code blocks have been supressed in the output document. <!--- The document was currently produced using R markdown v2 within Rstudio using `r substr(R.Version()$version.string,1,15)`, knitr, pandoc, and Miktex (for Latex) for producing the associated PDF or Word Document output. To update the results the markdown file needs to be loaded in Rstudio or run using the tools separately. ---> 
 
-```{r ,echo = FALSE}
+```{r initialization,echo = FALSE}
 # Before we get started set some overarching variables so we can rerun results instead of generating new ones if necessary
 
-# output_folder <- '../output/'
+# output_folder <- 'output/'
 # var_file <- '' # Set to empty to run things a fresh. Manually enter file name to regenerate old results
 # save_vars <- TRUE 
 # use_seed <- FALSE
@@ -27,7 +28,7 @@ This document is written in dynamic format using R markdown v2 within R studio 0
 
 This section summarises the methodology used for the calculations. A simple mathematical model is used to caluclate the change in population size over time and the number of new infections in partners of medicare ineligible people. Model details, assumptions and input parameters are described below.
 
-```{r,echo=FALSE}
+```{r SimVariables,echo=FALSE}
 # Initialize parameters for running calculations
 startyear <- 2015
 datayears <- 4 # Number of years we have data
@@ -79,7 +80,7 @@ Our analysis includes an estimate of the annual cost of providing ART, care and 
 #### Parameter table
 Table 1 lists all input parameters and their values and ranges.
 
-```{r,echo=FALSE}
+```{r inputParameters,echo=FALSE}
 # R code to define parameters for simulations. These are defined as uniform ranges [minimum, best guess, maximum]
 # Next version may read this is from an external file. Samples are randomly obtained from these ranges and put into
 #matrices to aid vectorised calculations
@@ -90,15 +91,6 @@ pop_growth <- c(0.8,1,1.1); # Overall relative change in population size
 prop_f <- c(0.3,0.4,0.5);   
 prop_m <- c(0.3,0.4,0.5);   
 # porportion of GBM prop_g is calculated internally so that the proportions add up to 1.
-
-# Convert to matrices. Population size calulated by combining the initial population size and growth rate.
-popsizeMatrix <- matrix(0,numsims,runyears)
-for (ii in 1:numsims){
-  popsizeMatrix[ii,] <- runif(1,popsize[1],popsize[2]) * runif(1,pop_growth[1],pop_growth[2])^c(1:runyears)
-}
-
-prop_fMatrix <- matrix(runif(numsims,prop_f[1],prop_f[3]),numsims,runyears)
-prop_mMatrix <- matrix(runif(numsims,prop_m[1],prop_m[3]),numsims,runyears)
  
 # Clinical parameters
 # As these values can change of time we use hardcoded data values from ATRAS to track their change over time. 
@@ -111,29 +103,6 @@ prop_vs_base <- c(0.8, 0.92, 0.95, 0.95) # Hard coded
 prop_art_factor <- c(0.75, 1.25) # Uncertainty in proportion not on ART so we don't get a proportion greater than 1 
 prop_vs_factor <- c(0.75, 1.25)  # Uncertainty in proportion not on ART so we don't get a proportion greater than 1 
 
-# Convert to matrices. This is done by first converting proportions on ART and with viral suppression to vectors of equal length 
-# to number of simulation years and then inverting twice so the uncertianty factor does not produce a value great than 1. If the
-# number of simulations years is greater than the number of data values the final data value is assumed to remain constant.
-
-prop_art_baseVec <- prop_art_base[length(prop_art_base)] * rep(1,runyears)
-prop_art_baseVec[1:length(prop_art_base)] <- prop_art_base  # Replace start of vector with data values
-
-prop_vs_baseVec <- prop_vs_base[length(prop_vs_base)] * rep(1,runyears)
-prop_vs_baseVec[1:length(prop_vs_base)] <- prop_vs_base  # Replace start of vector with data values
-
-# Now create matrix of values by looping over number of simulations
-prop_art_baseMatrix <- matrix(0,numsims,runyears)
-prop_vs_baseMatrix <- matrix(0,numsims,runyears)
-for (ii in 1:numsims) {
-   # Sample from multiplicative factor
-  tempFactor_art <- runif(1,prop_art_factor[1],prop_art_factor[2]) 
-  tempFactor_vs <- runif(1,prop_vs_factor[1],prop_vs_factor[2])
-  
-  # Do double inversion and store in the row
-  prop_art_baseMatrix[ii,] <- 1-tempFactor_art * (1-prop_art_baseVec)
-  prop_vs_baseMatrix[ii,] <- 1-tempFactor_vs * (1-prop_vs_baseVec)
-}
-
 # Behavioural paramters
 # Assumed to remain cosntant over time
 
@@ -141,12 +110,6 @@ heteroacts <- c(40, 50, 60)      # Number of heterosexual acts
 heterocondom <- c(0.1,0.2,0.3)    # Proportion of heterosexual acts where condoms have been used 
 gbmacts <- c(70,80,90)           # Number of homosexual acts
 gbmcondom <- c(0.5, 0.6, 0.7)    # Proportion of homosexual acts where condoms have been used
-
-# Convert to matrices
-heteroactsMatrix <- matrix(runif(numsims,heteroacts[1],heteroacts[3]),numsims,runyears)
-heterocondomMatrix <- matrix(runif(numsims,heterocondom[1],heterocondom[3]),numsims,runyears)
-gbmactsMatrix <- matrix(runif(numsims,gbmacts[1],gbmacts[3]),numsims,runyears)
-gbmcondomMatrix <- matrix(runif(numsims,gbmcondom[1],gbmcondom[3]),numsims,runyears)
 
 # HIV transmission parameters
 # Assumed to remain cosntant over time
@@ -158,14 +121,6 @@ betag <- c(0.005, 0.01,0.02)       # GBM male to male per unprotected act transm
 epsilon_condom <- c(0.8, 0.9, 0.99) # Efficacy of condoms
 epsilon_art <- c(0.9, 0.95, 0.99)   # Reduction in HIV infectiouness due to viral suppression
 
-# Convert to matrices
-betafMatrix <- matrix(runif(numsims,betaf[1],betaf[3]),numsims,runyears)
-betamMatrix <- matrix(runif(numsims,betam[1],betam[3]),numsims,runyears)
-betagMatrix <- matrix(runif(numsims,betag[1],betag[3]),numsims,runyears)
-
-epsilon_condomMatrix <- matrix(runif(numsims,epsilon_condom[1],epsilon_condom[3]),numsims,runyears)
-epsilon_artMatrix <- matrix(runif(numsims,epsilon_art[1],epsilon_art[3]),numsims,runyears)
-
 # Healthcare costs
 
 carecost <- c(0,0,0)
@@ -173,6 +128,14 @@ artcost <- c(0,0,0)
 lifecost <- c(0,0,0)
 
 ```
+
+```{r saveVars, echo = FALSE}
+# Save all the internal variables and parameter values 
+
+# TODO
+
+```
+
 
 **Table 1** - Calculation input parameters. Note parameter values and ranges are simple placeholders at the moment. References also need to be found and inserted. 
 
@@ -203,6 +166,62 @@ $c_{care}$ | Average annual healthcare for cost for PLHIV| `r carecost[2]`| [`r 
 $c_{ART}$ | Avergae annual cost of providing ART| `r artcost[2]`| [`r artcost[1]` - `r artcost[3]`] |
 $c_{life}$ | Average lifetime cost of providing healthcare (including ART) post infection | `r lifecost[2]`| [`r lifecost[1]` - `r lifecost[3]`] |
 
+```{r vectoriseParams, echo = FALSE}
+# Convert parameters to vectors and matrices for running in the calculations. Constants are stored as vectors and time varying 
+# parameters are stored as matrices. Each vector element or matrix row represents a specific sampling from the input parmater ranges. 
+
+# Demograhic parameters - Population size calulated by combining the initial population size and growth rate. As it is time varying 
+# population size is stored as a matrix
+popsizeMatrix <- matrix(0,numsims,runyears)
+for (ii in 1:numsims){
+  popsizeMatrix[ii,] <- runif(1,popsize[1],popsize[2]) * runif(1,pop_growth[1],pop_growth[2])^c(1:runyears)
+}
+
+prop_fvec <- runif(numsims,prop_f[1],prop_f[3])
+prop_mvec <- runif(numsims,prop_m[1],prop_m[3])
+
+# Clinical parameters (matrices). This is done by first converting proportions on ART and with viral suppression to vectors of 
+# equal length to number of simulation years and then inverting twice so the uncertianty factor does not produce a value great than 1. 
+# If the number of simulations years is greater than the number of data values the final data value is assumed to remain constant.
+
+prop_art_baseVec <- prop_art_base[length(prop_art_base)] * rep(1,runyears)
+prop_art_baseVec[1:length(prop_art_base)] <- prop_art_base  # Replace start of vector with data values
+
+prop_vs_baseVec <- prop_vs_base[length(prop_vs_base)] * rep(1,runyears)
+prop_vs_baseVec[1:length(prop_vs_base)] <- prop_vs_base  # Replace start of vector with data values
+
+
+# Now create matrix of values by looping over number of simulations
+prop_art_basemat <- matrix(0,numsims,runyears)
+prop_vs_basemat <- matrix(0,numsims,runyears)
+for (ii in 1:numsims) {
+   # Sample from multiplicative factor
+  tempFactor_art <- runif(1,prop_art_factor[1],prop_art_factor[2]) 
+  tempFactor_vs <- runif(1,prop_vs_factor[1],prop_vs_factor[2])
+  
+  # Do double inversion and store in the row
+  prop_art_baseMat[ii,] <- 1-tempFactor_art * (1-prop_art_baseVec)
+  prop_vs_baseMat[ii,] <- 1-tempFactor_vs * (1-prop_vs_baseVec)
+}
+
+# Behavioural paramaters (vectors)
+heteroactsVec <- mrunif(numsims,heteroacts[1],heteroacts[3])
+heterocondomVec <- runif(numsims,heterocondom[1],heterocondom[3])
+gbmactsVec <- runif(numsims,gbmacts[1],gbmacts[3])
+gbmcondomVec <- runif(numsims,gbmcondom[1],gbmcondom[3])
+
+# Transmission parameters (vectors)
+betafVec <- runif(numsims,betaf[1],betaf[3])
+betamVec <- runif(numsims,betam[1],betam[3])
+betagVec <- runif(numsims,betag[1],betag[3])
+
+epsilon_condomVec <- runif(numsims,epsilon_condom[1],epsilon_condom[3])
+epsilon_artVec <- runif(numsims,epsilon_art[1],epsilon_art[3])
+
+# Cost parameters
+
+````
+
 #### Calculations for new infections and costs
 
 The overall number of new infections per year is calculated by summing the number of new infections caused by each population group; i.e., $$I(y) = I_f(y) + I_m(y) + I_g(y),$$ where $y$ is the given year.
@@ -226,7 +245,7 @@ $$S = \left[\sum_{y = 1}^{years} (N(y)(c_{care} + \theta c_{ART})\right] + \Sigm
 
 Results amd figures will be generated once final methodology is finalized. 
 
-```{r,echo = FALSE}
+```{r functions,echo = FALSE}
 # we are now ready to run the code that actually does the calculations for each simulation. This involves looping through each parameter
 # set and calculating the incidence for each population using the current data and the counterfactual levels. <- Using the sampled and
 # best fitting estimates and just the median of all values?? -->
@@ -246,7 +265,10 @@ popinfects <- function(popsize,prob,stochastic = FALSE){
   }
   
 }
+```
 
+```{r calculations, echo=FALSE}
+# Generate output
 
 # Initialize output arrays
 infectsm <- matrix(0,numsims,runyears)
@@ -257,9 +279,9 @@ infectsg <- matrix(0,numsims,runyears)
 for (ii in 1:numsims){
   # Calculate population beta values which are the same for both ATRAS data and counterfactual scenario. MAY HAVE TO CHANGE THIS TO A
   # STOCHASTIC FORM IF THE INCIDENCE IS REALLY SMALL. Can do this through sampling using rbinom().
-  infectsm[ii,] <- popinfects(popsizeMatrix[ii,]*prop_mMatrix[ii,],infect_prob(heteroactsMatrix[ii,],heterocondomMatrix[ii,],
-                  epsilon_condomMatrix[ii,],prop_art_baseMatrix[ii,],prop_vs_baseMatrix[ii,],epsilon_artMatrix[ii,],
-                  betafMatrix[ii,]),TRUE)
+  infectsm[ii,] <- popinfects(popsizeMatrix[ii,]*prop_mMatrix[ii,1],infect_prob(heteroactsMatrix[ii,1],heterocondomMatrix[ii,1],
+                  epsilon_condomMatrix[ii,1],prop_art_baseMatrix[ii,],prop_vs_baseMatrix[ii,],epsilon_artMatrix[ii,1],
+                  betafMatrix[ii,1]),TRUE)
     
     
 #    heteroactsMatrix[ii,]*(1-prop_art_baseMatrix[ii,]*prop_vs_baseMatrix[ii,]*
@@ -277,7 +299,7 @@ totalinfects <- infectsm + infectsf + infectsg
 
 ```
 
-```{r, echo=FALSE}
+```{r plots, echo=FALSE}
 ### Discussion
 # Do some pretty plots of the output
 ```
