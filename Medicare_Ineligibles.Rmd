@@ -14,12 +14,13 @@ csl: docs/plos.csl
 
 This document summarises a simple methodolgy to calculate the impact of providing anti-retroviral therapy (ART) for free to people living with HIV (PLHIV) in Australia who are medicare ineligible. This analysis uses data from the Australian HIV Obserbvational Database Temporary Residents Access Study (ATRAS) [@petoumenos2013australian].The R code for these calculations is available in the associated Rmarkdown file.
 
-This document is written in dynamic format using R markdown v2 within R studio 0.98.1056 (using R version 3.1.0). Plots are created using the package ggplot2. Further details are available in the associated R markdown file which also contains the R code to produce all the results when the markdown is run. Code blocks have been supressed in the output document. <!--- The document was currently produced using R markdown v2 within Rstudio using `r substr(R.Version()$version.string,1,15)`, knitr, pandoc, and Miktex (for Latex) for producing the associated PDF or Word Document output. To update the results the markdown file needs to be loaded in Rstudio or run using the tools separately. ---> 
+This document is written in dynamic format using R markdown v2 within R studio 0.98.1056 (using R version 3.1.2). Plots are created using the package ggplot2. Further details are available in the associated R markdown file which also contains the R code to produce all the results when the markdown is run. Code blocks have been supressed in the output document. <!--- The document was currently produced using R markdown v2 within Rstudio using `r substr(R.Version()$version.string,1,15)`, knitr, pandoc, and Miktex (for Latex) for producing the associated PDF or Word Document output. To update the results the markdown file needs to be loaded in Rstudio or run using the tools separately. ---> 
 
 ```{r initialization,echo = FALSE}
 # Load libraries
 # 
 library(ggplot2)
+library(reshape2)
 
 # Before we get started set some overarching variables so we can rerun results instead of generating new ones if necessary
 outputFolder <- "output"
@@ -45,8 +46,8 @@ datayears <- 4 # Number of years we have data
 runyears <- 5  # Number of years to run the model
 datafile <- '' # File where all the data is stored
 numsims <- 10  # Number of 'simulations to run'
-stochastic <- FALSE   # Run stochastic equations?
-stochasticSims <- 10 # Number of sims for each parameter set if stochastic calculations are set-up
+stochastic <- TRUE   # Run stochastic equations?
+stochasticSims <- 5 # Number of sims for each parameter set if stochastic calculations are set-up
 
 # Generate and store RNG seeds so we can rerun things exactly if we want to
 currseed <- NULL
@@ -285,6 +286,7 @@ if (stochastic){
 }
 
 # Initialize output arrays
+paramSet <- vector()
 infectsm <- matrix(0,numsims*numruns,runyears)
 infectsf <- matrix(0,numsims*numruns,runyears)
 infectsg <- matrix(0,numsims*numruns,runyears)
@@ -293,9 +295,11 @@ infectsg <- matrix(0,numsims*numruns,runyears)
 for (ii in 1:numsims){
 
   for (jj in 1:numruns){
-    
     # Row index for storage in output matrices
     vecIndex <- (ii-1)*numruns + jj
+    
+    # Store parameter set index
+    paramSet <- c(paramSet,ii*matrix(1,runyears,1))
      
     # Infections casued by hetero males
     infectsm[vecIndex,] <- popinfects(popsizemat[ii,]*prop_mvec[ii],infect_prob(heteroactsvec[ii],heterocondomvec[ii],
@@ -314,19 +318,38 @@ for (ii in 1:numsims){
   }
 }
 
+paramSet <- t(paramSet) # Transpose to align with rows of the output matrices
 
-totalinfects <- infectsm + infectsf + infectsg
+#totalinfects <- infectsm + infectsf + infectsg
 
 ```
+
+```{r reshape, echo=FALSE}
+# Reshape the simulation output into a dataframe so it is easier for analysis and plotting. 
+maleInfects <- melt(t(infectsm)); maleInfects <-maleInfects[c(2,1,3)]; colnames(maleInfects) <- c("simulation","year","infectsbymales")
+femaleInfects <- melt(t(infectsf)); femaleInfects <- femaleInfects[c(2,1,3)]; colnames(femaleInfects) <- 
+  c("simulation","year","infectsbyfemales") 
+gdmInfects <- melt(t(infectsg)); gdmInfects <- gdmInfects[c(2,1,3)]; colnames(gdmInfects) <- c("simulation","year","infectsbygbm")
+
+# Merge the results we want into one data frame, order simulations and append parameterset number. Each observations reqpresents a 
+# single calculation of incidence
+newinfections <- merge(maleInfects,femaleInfects,all=TRUE)
+newinfections <- merge(newinfections,gdmInfects,all=TRUE)
+newinfections[order(newinfections$simulation),]
+
+#########.....append paramset to front of dataframe
+
+
+```
+
 
 ```{r plots, echo=FALSE}
 # Do some pretty plots of the output
 
-years <- 1:runyears
-
-
-plot(years,totalinfects[1,],type="n",lwd=2,xlab="Years",ylab="New infections")
-
+# years <- 1:runyears
+# 
+# 
+# plot(years,totalinfects[1,],type="n",lwd=2,xlab="Years",ylab="New infections")
 
 
 ```
