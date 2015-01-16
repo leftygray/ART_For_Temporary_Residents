@@ -10,8 +10,6 @@ bibliography: docs/medicare_ineligibles.bib
 csl: docs/plos.csl
 ---
 
-
-
 This document summarises a simple methodolgy to calculate the impact of providing anti-retroviral therapy (ART) for free to people living with HIV (PLHIV) in Australia who are medicare ineligible. This analysis uses data from the Australian HIV Obserbvational Database Temporary Residents Access Study (ATRAS) [@petoumenos2013australian].The R code for these calculations is available in the associated Rmarkdown file.
 
 This document is written in dynamic format using R markdown v2 within R studio 0.98.1056 (using R version 3.1.2). Plots are created using the package ggplot2. Further details are available in the associated R markdown file which also contains the R code to produce all the results when the markdown is run. Code blocks have been supressed in the output document. <!--- The document was currently produced using R markdown v2 within Rstudio using `r substr(R.Version()$version.string,1,15)`, knitr, pandoc, and Miktex (for Latex) for producing the associated PDF or Word Document output. To update the results the markdown file needs to be loaded in Rstudio or run using the tools separately. ---> 
@@ -335,10 +333,10 @@ gdmInfects <- melt(t(infectsg)); gdmInfects <- gdmInfects[c(2,1,3)]; colnames(gd
 # single calculation of incidence
 newinfections <- merge(maleInfects,femaleInfects,all=TRUE)
 newinfections <- merge(newinfections,gdmInfects,all=TRUE)
-newinfections[order(newinfections$simulation),]
+newinfections <- newinfections[order(newinfections$simulation),]
 
-#########.....append paramset to front of dataframe
-
+newinfections$paramset <- t(paramSet) # Add parameterset number
+newinfections <- newinfections[,c(ncol(newinfections),1:(ncol(newinfections)-1))] # Reorder: put paramset first
 
 ```
 
