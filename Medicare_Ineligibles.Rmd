@@ -15,6 +15,9 @@ This document summarises a simple methodolgy to calculate the impact of providin
 This document is written in dynamic format using R markdown v2 within R studio 0.98.1056 (using R version 3.1.2). Plots are created using the package ggplot2. Further details are available in the associated R markdown file which also contains the R code to produce all the results when the markdown is run. Code blocks have been supressed in the output document. <!--- The document was currently produced using R markdown v2 within Rstudio using `r substr(R.Version()$version.string,1,15)`, knitr, pandoc, and Miktex (for Latex) for producing the associated PDF or Word Document output. To update the results the markdown file needs to be loaded in Rstudio or run using the tools separately. ---> 
 
 ```{r initialization,echo = FALSE}
+# Clear workspace
+rm(list=ls()) 
+
 # Load libraries
 # 
 library(ggplot2)
@@ -23,37 +26,45 @@ library(reshape2)
 # Before we get started set some overarching variables so we can rerun results instead of generating new ones if necessary
 outputFolder <- "output"
 docFolder <- "docs"
-# var_file <- '' # Set to empty to run things a fresh. Manually enter file name to regenerate old results
-# save_vars <- TRUE 
-# use_seed <- FALSE
+fileTag <- " Test"  # Tag for output file names to specify scenarios (optional)
+currTime <- format(Sys.time(), "%y-%m-%d %H-%M-%S") # For appending to output files
+
+varFile <- "" # Set to empty to run things a fresh. Manually enter file name to regenerate old results
+saveVars <- FALSE
+saveResults <- FALSE
+useSeed <- FALSE
 
 # Check if output directories exist and create if necessary
 if (!file.exists(outputFolder)){dir.create(file.path("./",outputFolder))}
 if (!file.exists(docFolder)){dir.create(file.path("./",docFolder))}
 ```
 
-
 ### Methodogy 
 
 This section summarises the methodology used for the calculations. A simple mathematical model is used to caluclate the change in population size over time and the number of new infections in partners of medicare ineligible people. Model details, assumptions and input parameters are described below.
 
 ```{r SimVariables,echo=FALSE}
-# Initialize parameters for running calculations
-startyear <- 2015
-datayears <- 4 # Number of years we have data
-runyears <- 5  # Number of years to run the model
-datafile <- '' # File where all the data is stored
-numsims <- 10  # Number of 'simulations to run'
-stochastic <- TRUE   # Run stochastic equations?
-stochasticSims <- 5 # Number of sims for each parameter set if stochastic calculations are set-up
-
-# Generate and store RNG seeds so we can rerun things exactly if we want to
-currseed <- NULL
-if (exists(".Random.seed"))  currseed <- .Random.seed
-
-#if (!is.null(oldseed))
-#    .Random.seed <- currseed
-
+# If not loading from previously created file specifiy inputs
+if (nchar(varFile) == 0){
+  # Initialize parameters for running calculations
+  startyear <- 2015
+  datayears <- 4 # Number of years we have data
+  runyears <- 5  # Number of years to run the model
+  datafile <- '' # File where all the data is stored
+  numsims <- 10  # Number of 'simulations to run'
+  stochastic <- FALSE   # Run stochastic equations?
+  stochasticSims <- 5 # Number of sims for each parameter set if stochastic calculations are set-up
+  
+  # Generate and store a random integer for set.seed so we can rerun things exactly if we want to
+  currseed <- sample(1:10^6,1)
+  set.seed(currseed)
+  
+} else {
+  # Save current values of some params as they will be replaced
+  oldvarFile <- varFile; oldsaveVars <- saveVars; olduseSeed <- useSeed
+  load(varFile)
+  varFile <- oldvarFile; saveVars <- oldsaveVars; useSeed <- olduseSeed
+}
 ```
 
 #### Demographics
@@ -91,59 +102,59 @@ Our analysis includes an estimate of the annual cost of providing ART, care and 
 Table 1 lists all input parameters and their values and ranges.
 
 ```{r inputParameters,echo=FALSE}
-# R code to define parameters for simulations. These are defined as uniform ranges [minimum, best guess, maximum]
-# Next version may read this is from an external file. Samples are randomly obtained from these ranges and put into
-#matrices to aid vectorised calculations
-
-# Demographics
-popsize <- c(300,400,500);   
-pop_growth <- c(0.8,1,1.1); # Overall relative change in population size
-prop_f <- c(0.3,0.4,0.5);   
-prop_m <- c(0.3,0.4,0.5);   
-# porportion of GBM prop_g is calculated internally so that the proportions add up to 1.
- 
-# Clinical parameters
-# As these values can change of time we use hardcoded data values from ATRAS to track their change over time. 
-# Uncertainty or variation in these values is assumed to be the same over time and have the same relative factor.
-# Next version may read this is from an external file.
-
-prop_art_base <- c(0.55, 0.8, 0.95, 0.96) # Hard coded
-prop_vs_base <- c(0.8, 0.92, 0.95, 0.95) # Hard coded
-
-prop_art_factor <- c(0.75, 1.25) # Uncertainty in proportion not on ART so we don't get a proportion greater than 1 
-prop_vs_factor <- c(0.75, 1.25)  # Uncertainty in proportion not on ART so we don't get a proportion greater than 1 
-
-# Behavioural paramters
-# Assumed to remain cosntant over time
-
-heteroacts <- c(40, 50, 60)      # Number of heterosexual acts
-heterocondom <- c(0.1,0.2,0.3)    # Proportion of heterosexual acts where condoms have been used 
-gbmacts <- c(70,80,90)           # Number of homosexual acts
-gbmcondom <- c(0.5, 0.6, 0.7)    # Proportion of homosexual acts where condoms have been used
-
-# HIV transmission parameters
-# Assumed to remain cosntant over time
-
-betaf <- c(0.0002, 0.0004, 0.001)  # Female to male per unprotected act  transmission probability
-betam <- c(0.0002, 0.0008,0.0015)  # Male to female per unprotected act  transmission probability
-betag <- c(0.005, 0.01,0.02)       # GBM male to male per unprotected act transmission probability
-
-epsilon_condom <- c(0.8, 0.9, 0.99) # Efficacy of condoms
-epsilon_art <- c(0.9, 0.95, 0.99)   # Reduction in HIV infectiouness due to viral suppression
-
-# Healthcare costs
-
-carecost <- c(0,0,0)
-artcost <- c(0,0,0)
-lifecost <- c(0,0,0)
-
-```
-
-```{r saveVars, echo = FALSE}
-# Save all the internal variables and parameter values 
-
-# TODO
-
+# If not loading from previously created file specifiy inputs
+if (nchar(varFile) == 0){
+  # R code to define parameters for simulations. These are defined as uniform ranges [minimum, best guess, maximum]
+  # Next version may read this is from an external file. Samples are randomly obtained from these ranges and put into
+  #matrices to aid vectorised calculations
+  
+  # Demographics
+  popsize <- c(300,400,500);   
+  pop_growth <- c(0.8,1,1.1); # Overall relative change in population size
+  prop_f <- c(0.3,0.4,0.5);   
+  prop_m <- c(0.3,0.4,0.5);   
+  # porportion of GBM prop_g is calculated internally so that the proportions add up to 1.
+   
+  # Clinical parameters
+  # As these values can change of time we use hardcoded data values from ATRAS to track their change over time. 
+  # Uncertainty or variation in these values is assumed to be the same over time and have the same relative factor.
+  # Next version may read this is from an external file.
+  
+  prop_art_base <- c(0.55, 0.8, 0.95, 0.96) # Hard coded
+  prop_vs_base <- c(0.8, 0.92, 0.95, 0.95) # Hard coded
+  
+  prop_art_factor <- c(0.75, 1.25) # Uncertainty in proportion not on ART so we don't get a proportion greater than 1 
+  prop_vs_factor <- c(0.75, 1.25)  # Uncertainty in proportion not on ART so we don't get a proportion greater than 1 
+  
+  # Behavioural paramters
+  # Assumed to remain cosntant over time
+  
+  heteroacts <- c(40, 50, 60)      # Number of heterosexual acts
+  heterocondom <- c(0.1,0.2,0.3)    # Proportion of heterosexual acts where condoms have been used 
+  gbmacts <- c(70,80,90)           # Number of homosexual acts
+  gbmcondom <- c(0.5, 0.6, 0.7)    # Proportion of homosexual acts where condoms have been used
+  
+  # HIV transmission parameters
+  # Assumed to remain cosntant over time
+  
+  betaf <- c(0.0002, 0.0004, 0.001)  # Female to male per unprotected act  transmission probability
+  betam <- c(0.0002, 0.0008,0.0015)  # Male to female per unprotected act  transmission probability
+  betag <- c(0.005, 0.01,0.02)       # GBM male to male per unprotected act transmission probability
+  
+  epsilon_condom <- c(0.8, 0.9, 0.99) # Efficacy of condoms
+  epsilon_art <- c(0.9, 0.95, 0.99)   # Reduction in HIV infectiouness due to viral suppression
+  
+  # Healthcare costs
+  
+  carecost <- c(0,0,0)
+  artcost <- c(0,0,0)
+  lifecost <- c(0,0,0)
+  
+  # Save all the internal variables and parameter values 
+  if (saveVars){
+    save(list = ls(all = TRUE), file = paste(outputFolder, "/", currTime, " Inputs", fileTag, ".R", sep =""))
+  }
+}
 ```
 
 
@@ -179,6 +190,12 @@ $c_{life}$ | Average lifetime cost of providing healthcare (including ART) post 
 ```{r vectoriseParams, echo = FALSE}
 # Convert parameters to vectors and matrices for running in the calculations. Constants are stored as vectors and time varying 
 # parameters are stored as matrices. Each vector element or matrix row represents a specific sampling from the input parmater ranges. 
+
+if (useSeed){
+  set.seed(currseed)
+} else {
+  set.seed(NULL)
+}
 
 # Demograhic parameters - Population size calulated by combining the initial population size and growth rate. As it is time varying 
 # population size is stored as a matrix
@@ -285,9 +302,16 @@ if (stochastic){
 
 # Initialize output arrays
 paramSet <- vector()
+
+# For ATRAS simulations
 infectsm <- matrix(0,numsims*numruns,runyears)
 infectsf <- matrix(0,numsims*numruns,runyears)
 infectsg <- matrix(0,numsims*numruns,runyears)
+
+# For baseline simulations
+infectsmBase <- matrix(0,numsims*numruns,runyears)
+infectsfBase <- matrix(0,numsims*numruns,runyears)
+infectsgBase <- matrix(0,numsims*numruns,runyears)
 
 # Do the calculations
 for (ii in 1:numsims){
@@ -299,19 +323,35 @@ for (ii in 1:numsims){
     # Store parameter set index
     paramSet <- c(paramSet,ii*matrix(1,runyears,1))
      
-    # Infections casued by hetero males
+    # Infections casued by hetero males - ATRAS
     infectsm[vecIndex,] <- popinfects(popsizemat[ii,]*prop_mvec[ii],infect_prob(heteroactsvec[ii],heterocondomvec[ii],
                     epsilon_condomvec[ii],prop_art_basemat[ii,],prop_vs_basemat[ii,],epsilon_artvec[ii],
                     betamvec[ii]),stochastic)
   
-    # Infections casused by hetero female
+    # Infections casued by hetero males - Baseline
+    infectsmBase[vecIndex,] <- popinfects(popsizemat[ii,]*prop_mvec[ii],infect_prob(heteroactsvec[ii],heterocondomvec[ii],
+                    epsilon_condomvec[ii],prop_art_basemat[ii,1],prop_vs_basemat[ii,1],epsilon_artvec[ii],
+                    betamvec[ii]),stochastic)
+    
+    # Infections casused by hetero female - ATRAS
     infectsf[vecIndex,] <- popinfects(popsizemat[ii,]*prop_fvec[ii],infect_prob(heteroactsvec[ii],heterocondomvec[ii],
                     epsilon_condomvec[ii],prop_art_basemat[ii,],prop_vs_basemat[ii,],epsilon_artvec[ii],
                     betafvec[ii]),stochastic)
     
-    # Infections caused by GBM
+    # Infections casused by hetero female - Baseline
+    infectsfBase[vecIndex,] <- popinfects(popsizemat[ii,]*prop_fvec[ii],infect_prob(heteroactsvec[ii],heterocondomvec[ii],
+                    epsilon_condomvec[ii],prop_art_basemat[ii,1],prop_vs_basemat[ii,1],epsilon_artvec[ii],
+                    betafvec[ii]),stochastic)
+    
+    
+    # Infections caused by GBM - ATRAS
     infectsg[vecIndex,] <- popinfects(popsizemat[ii,]*(1-prop_mvec[ii]-prop_fvec[ii]),infect_prob(gbmactsvec[ii],gbmcondomvec[ii],
                     epsilon_condomvec[ii],prop_art_basemat[ii,],prop_vs_basemat[ii,],epsilon_artvec[ii],
+                    betagvec[ii]),stochastic)
+    
+    # Infections caused by GBM - BAseline
+    infectsgBase[vecIndex,] <- popinfects(popsizemat[ii,]*(1-prop_mvec[ii]-prop_fvec[ii]),infect_prob(gbmactsvec[ii],gbmcondomvec[ii],
+                    epsilon_condomvec[ii],prop_art_basemat[ii,1],prop_vs_basemat[ii,1],epsilon_artvec[ii],
                     betagvec[ii]),stochastic)
   }
 }
@@ -327,28 +367,49 @@ paramSet <- t(paramSet) # Transpose to align with rows of the output matrices
 maleInfects <- melt(t(infectsm)); maleInfects <-maleInfects[c(2,1,3)]; colnames(maleInfects) <- c("simulation","year","infectsbymales")
 femaleInfects <- melt(t(infectsf)); femaleInfects <- femaleInfects[c(2,1,3)]; colnames(femaleInfects) <- 
   c("simulation","year","infectsbyfemales") 
-gdmInfects <- melt(t(infectsg)); gdmInfects <- gdmInfects[c(2,1,3)]; colnames(gdmInfects) <- c("simulation","year","infectsbygbm")
+gbmInfects <- melt(t(infectsg)); gbmInfects <- gbmInfects[c(2,1,3)]; colnames(gbmInfects) <- c("simulation","year","infectsbygbm")
 
-# Merge the results we want into one data frame, order simulations and append parameterset number. Each observations reqpresents a 
+maleInfectsBase <- melt(t(infectsmBase)); maleInfectsBase <-maleInfectsBase[c(2,1,3)]; colnames(maleInfectsBase) <- c("simulation","year","infectsbymalesbase")
+femaleInfectsBase <- melt(t(infectsfBase)); femaleInfectsBase <- femaleInfectsBase[c(2,1,3)]; colnames(femaleInfectsBase) <- 
+  c("simulation","year","infectsbyfemalesbase") 
+gbmInfectsBase <- melt(t(infectsgBase)); gbmInfectsBase <- gbmInfectsBase[c(2,1,3)]; colnames(gbmInfectsBase) <- c("simulation","year","infectsbygbmbase")
+
+# Merge the results we want into one data frame, order simulations and append parameterset number. Each observation represents a 
 # single calculation of incidence
 newinfections <- merge(maleInfects,femaleInfects,all=TRUE)
-newinfections <- merge(newinfections,gdmInfects,all=TRUE)
+newinfections <- merge(newinfections,gbmInfects,all=TRUE)
+newinfections$totalinfects <- newinfections$infectsbymales + newinfections$infectsbyfemales + newinfections$infectsbygbm
+
+# Baseline results
+newinfections <- merge(newinfections,maleInfectsBase,all=TRUE)
+newinfections <- merge(newinfections,femaleInfectsBase,all=TRUE)
+newinfections <- merge(newinfections,gbmInfectsBase,all=TRUE)
+newinfections$totalinfectsbase <- newinfections$infectsbymalesbase + newinfections$infectsbyfemalesbase + newinfections$infectsbygbmbase
+
+# Order by simulation number
 newinfections <- newinfections[order(newinfections$simulation),]
 
-newinfections$paramset <- t(paramSet) # Add parameterset number
-newinfections <- newinfections[,c(ncol(newinfections),1:(ncol(newinfections)-1))] # Reorder: put paramset first
+# Add parameterset number and reorder to put in first column
+newinfections$paramset <- t(paramSet) 
+newinfections <- newinfections[,c(ncol(newinfections),1:(ncol(newinfections)-1))] 
+
+# Write results to file
+# Save all the internal variables and parameter values 
+  if (saveResults){
+    save(newinfections, file = paste(outputFolder, "/", currTime, " Results", fileTag, ".R", sep =""))
+    write.csv(newinfections, file = paste(outputFolder, "/", currTime, " Results", fileTag, ".csv", sep =""))
+  }
+
 
 ```
 
 
 ```{r plots, echo=FALSE}
 # Do some pretty plots of the output
-
-# years <- 1:runyears
-# 
-# 
-# plot(years,totalinfects[1,],type="n",lwd=2,xlab="Years",ylab="New infections")
-
+dev.off()
+g <- ggplot(newinfections,aes(x=year,y=totalinfects,group=simulation)) + geom_line(color="blue")
+g <- g + geom_line(aes(y = totalinfectsbase,group=simulation,color="red"))
+print(g)
 
 ```
 
