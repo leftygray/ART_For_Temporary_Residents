@@ -14,7 +14,7 @@ This document summarises a simple methodolgy to calculate the impact of providin
 
 This document is written in dynamic format using R markdown v2 within R studio 0.98.1056 (using R version 3.1.2). Plots are created using the package ggplot2. Further details are available in the associated R markdown file which also contains the R code to produce all the results when the markdown is run. Code blocks have been supressed in the output document. <!--- The document was currently produced using R markdown v2 within Rstudio using `r substr(R.Version()$version.string,1,15)`, knitr, pandoc, and Miktex (for Latex) for producing the associated PDF or Word Document output. To update the results the markdown file needs to be loaded in Rstudio or run using the tools separately. ---> 
 
-```{r initialization,echo = FALSE}
+```{r initialization,echo = FALSE,messages = FALSE,include=FALSE}
 # Clear workspace
 rm(list=ls()) 
 
@@ -359,8 +359,6 @@ for (ii in 1:numsims){
 
 paramSet <- t(paramSet) # Transpose to align with rows of the output matrices
 
-#totalinfects <- infectsm + infectsf + infectsg
-
 ```
 
 ```{r reshape, echo=FALSE}
@@ -401,25 +399,48 @@ newinfections <- newinfections[,c(ncol(newinfections),1:(ncol(newinfections)-1))
     write.csv(newinfections, file = paste(outputFolder, "/", currTime, " Results", fileTag, ".csv", sep =""))
   }
 
-
 ```
 
-
-```{r plots, echo=FALSE}
+```{r plotcode, echo=FALSE}
 # Create plots of results
+graphics.off()
 
 # Initialize plotting properties
-colourmap <- c("#999999","#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7") # Colour blind palette
+colourmap <- c("#999999","#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7") # Colour blind palette with grey and black 
 
+# Theme for plot variables
+opts <- theme(text = element_text(face = "bold",size=16,colour="black"),
+  axis.text.x = element_text(face = "plain",size=14,colour="black"),
+  axis.text.y = element_text(face = "plain",size=14,colour="black"),
+  axis.line = element_line(colour="black"),
+  axis.ticks = element_line(colour="black"),
+  legend.position = "top",
+  legend.background = element_rect(colour = "black")
+)
 
-graphics.off()
-g <- ggplot(newinfections,aes(x=year,y=totalinfects,group=simulation)) + geom_line(color=colourmap[8])
-# g <- g + geom_line(aes(y = totalinfectsbase,group=simulation,color=colourmap[2]))
-# g <- g + theme_bw()
-windows(width=7,height=5)
-print(g)
-dev.print(pdf,file=paste(outputFolder, "/figures/", currTime, " Results", fileTag,".pdf",sep =""))
+simsplot <- ggplot(data = newinfections,aes(x=year,group=simulation)) # Setup data for plot
+simsplot <- simsplot + geom_line(aes(y = totalinfectsbase,colour="Baseline simulations"),size = 1.05) # Plot baseline simulations
+simsplot <- simsplot + geom_line(aes(y = totalinfects,colour="ATRAS simulations"),size = 1.05) # ATRAS simulations
+simsplot <- simsplot + stat_summary(aes(y=totalinfectsbase,group=1),fun.y = median,geom = "line",colour=colourmap[2],size = 1.2) # Median of baseline simulations
+simsplot <- simsplot + stat_summary(aes(y=totalinfects,group=1),fun.y = median,geom = "line",colour=colourmap[7],size = 1.2) # Median of ATRAS simulation
+simsplot <- simsplot + scale_colour_manual("",breaks = c("Baseline simulations","ATRAS simulations"), values = c(colourmap[4],colourmap[1]))
+simsplot <- simsplot + ylim(0,round(max(newinfections$totalinfects,newinfections$totalinfectsbase),-1))
+simsplot <- simsplot + xlab("Years since start of ATRAS") + ylab("New infections") + opts
+
+# First plot sims and medians
+# windows(width=6,height=4.5)
+# print(simsplot)
+# dev.print(pdf,file=paste(outputFolder, "/figures/", currTime, " Results", fileTag,".pdf",sep =""))
 # dev.off()
+
+# Plot box plots for cumulative incidence
+
+# Do some data manipulation first
+infects <- melt(newinfections,id.vars=c("year","simulation"),measure.vars=c("totalinfectsbase","totalinfects"),variable.name="scenario",value.name="newinfections")
+infectsSum <- aggregate(newinfections ~ simulation + scenario, data=infects, FUN=sum)
+
+# Create a boxplot
+totalplot <- ggplot(infectsSum,aes(x=scenario,y=newinfections)) + geom_boxplot()
 
 ```
 
