@@ -23,6 +23,7 @@ rm(list=ls())
 require(ggplot2)
 require(RColorBrewer) # Maybe
 require(reshape2)
+require(gridExtra)
 
 # Before we get started set some overarching variables so we can rerun results instead of generating new ones if necessary
 outputFolder <- "output"
@@ -38,6 +39,12 @@ useSeed <- FALSE
 # Check if output directories exist and create if necessary
 if (!file.exists(outputFolder)){dir.create(file.path("./",outputFolder))}
 if (!file.exists(docFolder)){dir.create(file.path("./",docFolder))}
+
+# Produce plots in windows for viewing separately and save plots separately
+showPlots <- TRUE
+savePlots <- FALSE
+
+
 ```
 
 ### Methodogy 
@@ -385,6 +392,9 @@ newinfections <- merge(newinfections,femaleInfectsBase,all=TRUE)
 newinfections <- merge(newinfections,gbmInfectsBase,all=TRUE)
 newinfections$totalinfectsbase <- newinfections$infectsbymalesbase + newinfections$infectsbyfemalesbase + newinfections$infectsbygbmbase
 
+# Averted infections
+newinfections$infectsaverted <- (newinfections$totalinfectsbase - newinfections$totalinfects)
+  
 # Order by simulation number
 newinfections <- newinfections[order(newinfections$simulation),]
 
@@ -409,16 +419,21 @@ graphics.off()
 colourmap <- c("#999999","#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7") # Colour blind palette with grey and black 
 
 # Theme for plot variables
-opts <- theme(text = element_text(face = "bold",size=16,colour="black"),
-  axis.text.x = element_text(face = "plain",size=14,colour="black"),
-  axis.text.y = element_text(face = "plain",size=14,colour="black"),
+opts <- theme(text = element_text(face = "bold",size=12,colour="black"),
+  axis.text.x = element_text(face = "plain",size=10,colour="black"),
+  axis.text.y = element_text(face = "plain",size=10,colour="black"),
   axis.line = element_line(colour="black"),
   axis.ticks = element_line(colour="black"),
   legend.position = "top",
-  legend.background = element_rect(colour = "black")
+  legend.background = element_rect(),
+  legend.key = element_blank(),
+  panel.grid.major = element_blank(), 
+  panel.grid.minor = element_blank(), 
+  panel.background = element_blank(), 
+  axis.line = element_line(colour = "black")
 )
 
-simsplot <- ggplot(data = newinfections,aes(x=year,group=simulation)) # Setup data for plot
+simsplot <- ggplot(data = newinfections,aes(x=year,group=simulation)) + theme_bw() # Setup data for plot
 simsplot <- simsplot + geom_line(aes(y = totalinfectsbase,colour="Baseline simulations"),size = 1.05) # Plot baseline simulations
 simsplot <- simsplot + geom_line(aes(y = totalinfects,colour="ATRAS simulations"),size = 1.05) # ATRAS simulations
 simsplot <- simsplot + stat_summary(aes(y=totalinfectsbase,group=1),fun.y = median,geom = "line",colour=colourmap[2],size = 1.2) # Median of baseline simulations
@@ -439,9 +454,26 @@ simsplot <- simsplot + xlab("Years since start of ATRAS") + ylab("New infections
 infects <- melt(newinfections,id.vars=c("year","simulation"),measure.vars=c("totalinfectsbase","totalinfects"),variable.name="scenario",value.name="newinfections")
 infectsSum <- aggregate(newinfections ~ simulation + scenario, data=infects, FUN=sum)
 
-# Create a boxplot
-totalplot <- ggplot(infectsSum,aes(x=scenario,y=newinfections)) + geom_boxplot()
+# Create a boxplot for cumulative incidence
+totalplot <- ggplot(data = infectsSum,aes(x=scenario,y=newinfections)) +  theme_bw() + geom_boxplot(aes(fill=scenario),width = 0.75,alpha = 0.5)
+totalplot <- totalplot + scale_fill_manual(labels=c("Baseline","ATRAS"),values = c(colourmap[2],colourmap[7]))
+totalplot <- totalplot + xlab("") + ylab("Cumulative infections") + scale_colour_manual(labels=c("Baseline","ATRAS"),values = c(colourmap[2],colourmap[7])) + scale_x_discrete(labels=c("Baseline","ATRAS")) 
+totalplot <- totalplot + opts + theme(legend.position="none")
 
+# Histogram of averted infections
+avertplot <- ggplot(data = newinfections,aes(x=infectsaverted)) + theme_bw()
+avertplot <- avertplot + geom_density(alpha = 0.5, fill = colourmap[7])
+avertplot <- avertplot + xlab("Averted infections") + ylab("Density")
+avertplot <- avertplot + opts + theme(legend.position="none")
+# windows(width=12,height=4.5)
+# print(grid.arrange(totalplot,avertplot,ncol = 2))
+
+# Create a plot for total costs 
+
+```
+
+```{r insertyplots, echo=FALSE, messages = FALSE, fig.width=4, fig.height=3}
+print(simsplot)
 ```
 
 ### Discussion
