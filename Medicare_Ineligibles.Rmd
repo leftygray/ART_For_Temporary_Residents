@@ -58,7 +58,7 @@ if (nchar(varFile) == 0){
   startyear <- 2015
   datayears <- 4 # Number of years we have data
   runyears <- 5  # Number of years to run the model
-  datafile <- '' # File where all the data is stored
+  datafile <- '' # File where all the data is stored. Assumed empty at the moment.
   numsims <- 200  # Number of 'simulations to run'
   stochastic <- FALSE   # Run stochastic equations?
   stochasticSims <- 20 # Number of sims for each parameter set if stochastic calculations are set-up
@@ -143,14 +143,14 @@ if (nchar(varFile) == 0){
   gbmcondom <- c(0.5, 0.6, 0.7)    # Proportion of homosexual acts where condoms have been used
   
   # HIV transmission parameters
-  # Assumed to remain cosntant over time
+  # Assumed to remain constant over time
   
-  betaf <- c(0.0002, 0.0004, 0.001)  # Female to male per unprotected act  transmission probability
-  betam <- c(0.0002, 0.0008,0.0015)  # Male to female per unprotected act  transmission probability
-  betag <- c(0.005, 0.01,0.02)       # GBM male to male per unprotected act transmission probability
+  betaf <- c(0.0001, 0.0004, 0.0014)  # Female to male per unprotected act  transmission probability
+  betam <- c(0.0006, 0.0008,0.0011)  # Male to female per unprotected act  transmission probability
+  betag <- c(0.01, 0.014,0.019)       # GBM male to male per unprotected act transmission probability
   
-  epsilon_condom <- c(0.8, 0.9, 0.99) # Efficacy of condoms
-  epsilon_art <- c(0.9, 0.95, 0.99)   # Reduction in HIV infectiouness due to viral suppression
+  epsilon_condom <- c(0.8, 0.9, 0.975) # Efficacy of condoms
+  epsilon_art <- c(0.5, 0.7, 0.9)   # Reduction in HIV infectiouness due to viral suppression
   
   # Healthcare costs
   
@@ -171,21 +171,21 @@ if (nchar(varFile) == 0){
 Parameter  | Description | Value                                                        | Range | References
 -----------|-------------|--------------------------------------------------------------|-------|------------
 **Demographic parameters** | | | |
-$N(0)$   | Overall population size in initial year (2014) | `r popsize[2]`| [`r popsize[1]` - `r popsize[3]`] |       
-$\pi$ | Rate of entry into population | `r pop_growth[2]` /yr | [`r pop_growth[1]` - `r pop_growth[3]`] |           
-$p_f$ | Proportion population female | `r prop_f[2]` | [`r prop_f[1]` - `r prop_f[3]`] |
-$p_m$ | Proportion population male | `r prop_m[2]` | [`r prop_m[1]` - `r prop_m[3]`] |
-$p_g$ | Proprtion population GBM | $1-p_f-p_m$ | Depends on $p_f$ and $p_m$ values |
+$N(0)$   | Overall population size in initial year (2014) | `r popsize[2]`| [`r popsize[1]` - `r popsize[3]`] | [@petoumenos2013australian]      
+$\pi$ | Rate of entry into population | `r pop_growth[2]` /yr | [`r pop_growth[1]` - `r pop_growth[3]`] | [@petoumenos2013australian]          
+$p_f$ | Proportion population female | `r prop_f[2]` | [`r prop_f[1]` - `r prop_f[3]`] | [@petoumenos2013australian]
+$p_m$ | Proportion population male | `r prop_m[2]` | [`r prop_m[1]` - `r prop_m[3]`] | [@petoumenos2013australian]
+$p_g$ | Proprtion population GBM | $1-p_f-p_m$ | Depends on $p_f$ and $p_m$ values | [@petoumenos2013australian]
 **Clinical parameters** | | | |
-$\theta$ | Proportion of population taking ART | ATRAS data| Multiplicative factor [`r prop_art_factor[1]` - `r prop_art_factor[2]`]|
-$\psi$ | Proportion of population taking ART | ATRAS data| Multiplicative factor [`r prop_vs_factor[1]` - `r prop_vs_factor[2]`]|
+$\theta$ | Proportion of population taking ART | ATRAS data| Multiplicative factor [`r prop_art_factor[1]` - `r prop_art_factor[2]`]| [@petoumenos2013australian]
+$\psi$ | Proportion of population taking ART | ATRAS data| Multiplicative factor [`r prop_vs_factor[1]` - `r prop_vs_factor[2]`]| [@petoumenos2013australian]
 **HIV behavioural parameters** | | | |
 $a_h$ | Annual number of heterosexual acts between females and males| `r heteroacts[2]` | [`r heteroacts[1]` - `r heteroacts[3]`] |
 $p^c_h$ | Proportion of heterosexual acts protected with a condom | `r heterocondom[2]` | [`r heterocondom[1]` - `r heterocondom[3]`] |
 $a_g$ | Annual number of sexual acts with other GBM| `r gbmacts[2]` | [`r gbmacts[1]` - `r gbmacts[3]`]|
 $p^c_g$ | Proportion of GBM acts protected with a condom| `r gbmcondom[2]`| [`r gbmcondom[1]` - `r gbmcondom[3]`]|
 **HIV transmission paramaters** | | | |
-$\beta_f$ | Per act transmission probability from females to males | `r betaf[2]`| [`r betaf[1]` - `r betaf[3]`]|
+$\beta_f$ | Per act transmission probability from females to males | `r betaf[2]`| [`r betaf[1]` - `r betaf[3]`]| 
 $\beta_m$ | Per act transmission probability from males to females| `r betam[2]`| [`r betam[1]` - `r betam[3]`]|
 $\beta_g$ | Per act transmission probability between GBM| `r betag[2]` | [`r betag[1]` - `r betag[3]`]|
 $\epsilon_c$ | Efficacy of condoms | `r epsilon_condom[2]`| [`r epsilon_condom[1]` - `r epsilon_condom[3]`]| 
