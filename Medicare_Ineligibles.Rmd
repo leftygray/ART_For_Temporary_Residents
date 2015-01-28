@@ -137,9 +137,9 @@ if (nchar(varFile) == 0){
   # Behavioural paramters
   # Assumed to remain cosntant over time
   
-  heteroacts <- c(40, 50, 60)      # Number of heterosexual acts
-  heterocondom <- c(0.1,0.2,0.3)    # Proportion of heterosexual acts where condoms have been used 
-  gbmacts <- c(70,80,90)           # Number of homosexual acts
+  heteroacts <- c(60, 80, 100)     # Number of heterosexual acts per year with partners
+  heterocondom <- c(0.1,0.2,0.3)   # Proportion of heterosexual acts where condoms have been used 
+  gbmacts <- c(70,80,90)           # Number of homosexual acts per year with partners
   gbmcondom <- c(0.5, 0.6, 0.7)    # Proportion of homosexual acts where condoms have been used
   
   # HIV transmission parameters
@@ -168,32 +168,45 @@ if (nchar(varFile) == 0){
 
 **Table 1** - Calculation input parameters. Note parameter values and ranges are simple placeholders at the moment. References also need to be found and inserted. 
 
-Parameter  | Description | Value                                                        | Range | References
------------|-------------|--------------------------------------------------------------|-------|------------
+Parameter  | Description | Value                                                        | Range | Endnote justification
+-----------|-------------|--------------------------------------------------------------|-------|-------------------- 
 **Demographic parameters** | | | |
-$N(0)$   | Overall population size in initial year (2014) | `r popsize[2]`| [`r popsize[1]` - `r popsize[3]`] | [@petoumenos2013australian]      
-$\pi$ | Rate of entry into population | `r pop_growth[2]` /yr | [`r pop_growth[1]` - `r pop_growth[3]`] | [@petoumenos2013australian]          
-$p_f$ | Proportion population female | `r prop_f[2]` | [`r prop_f[1]` - `r prop_f[3]`] | [@petoumenos2013australian]
-$p_m$ | Proportion population male | `r prop_m[2]` | [`r prop_m[1]` - `r prop_m[3]`] | [@petoumenos2013australian]
-$p_g$ | Proprtion population GBM | $1-p_f-p_m$ | Depends on $p_f$ and $p_m$ values | [@petoumenos2013australian]
+$N(0)$   | Overall population size in initial year (2014) | `r popsize[2]`| [`r popsize[1]` - `r popsize[3]`] | 1      
+$\pi$ | Rate of entry into population | `r pop_growth[2]` /yr | [`r pop_growth[1]` - `r pop_growth[3]`] | 1          
+$p_f$ | Proportion population female | `r prop_f[2]` | [`r prop_f[1]` - `r prop_f[3]`] | 1
+$p_m$ | Proportion population male | `r prop_m[2]` | [`r prop_m[1]` - `r prop_m[3]`] | 1
+$p_g$ | Proprtion population GBM | $1-p_f-p_m$ | Depends on $p_f$ and $p_m$ values | 1
 **Clinical parameters** | | | |
-$\theta$ | Proportion of population taking ART | ATRAS data| Multiplicative factor [`r prop_art_factor[1]` - `r prop_art_factor[2]`]| [@petoumenos2013australian]
-$\psi$ | Proportion of population taking ART | ATRAS data| Multiplicative factor [`r prop_vs_factor[1]` - `r prop_vs_factor[2]`]| [@petoumenos2013australian]
+$\theta$ | Proportion of population taking ART | ATRAS data| Multiplicative factor [`r prop_art_factor[1]` - `r prop_art_factor[2]`]| 2
+$\psi$ | Proportion of population taking ART | ATRAS data| Multiplicative factor [`r prop_vs_factor[1]` - `r prop_vs_factor[2]`]| 2
 **HIV behavioural parameters** | | | |
-$a_h$ | Annual number of heterosexual acts between females and males| `r heteroacts[2]` | [`r heteroacts[1]` - `r heteroacts[3]`] |
-$p^c_h$ | Proportion of heterosexual acts protected with a condom | `r heterocondom[2]` | [`r heterocondom[1]` - `r heterocondom[3]`] |
-$a_g$ | Annual number of sexual acts with other GBM| `r gbmacts[2]` | [`r gbmacts[1]` - `r gbmacts[3]`]|
-$p^c_g$ | Proportion of GBM acts protected with a condom| `r gbmcondom[2]`| [`r gbmcondom[1]` - `r gbmcondom[3]`]|
+$a_h$ | Annual number of heterosexual acts between females and males| `r heteroacts[2]` | [`r heteroacts[1]` - `r heteroacts[3]`] | 3
+$p^c_h$ | Proportion of heterosexual acts protected with a condom | `r heterocondom[2]` | [`r heterocondom[1]` - `r heterocondom[3]`] | 4
+$a_g$ | Annual number of sexual acts with other GBM| `r gbmacts[2]` | [`r gbmacts[1]` - `r gbmacts[3]`]| 5
+$p^c_g$ | Proportion of GBM acts protected with a condom| `r gbmcondom[2]`| [`r gbmcondom[1]` - `r gbmcondom[3]`]| 6
 **HIV transmission paramaters** | | | |
-$\beta_f$ | Per act transmission probability from females to males | `r betaf[2]`| [`r betaf[1]` - `r betaf[3]`]| 
-$\beta_m$ | Per act transmission probability from males to females| `r betam[2]`| [`r betam[1]` - `r betam[3]`]|
-$\beta_g$ | Per act transmission probability between GBM| `r betag[2]` | [`r betag[1]` - `r betag[3]`]|
-$\epsilon_c$ | Efficacy of condoms | `r epsilon_condom[2]`| [`r epsilon_condom[1]` - `r epsilon_condom[3]`]| 
-$\epsilon_{ART}$ | Efficacy of ART in preventing HIV transmission if virus is suppressed | `r epsilon_art[2]`| [`r epsilon_art[1]` - `r epsilon_art[3]`]|
+$\beta_f$ | Per act transmission probability from females to males | `r betaf[2]`| [`r betaf[1]` - `r betaf[3]`]| 7
+$\beta_m$ | Per act transmission probability from males to females| `r betam[2]`| [`r betam[1]` - `r betam[3]`]| 7
+$\beta_g$ | Per act transmission probability between GBM| `r betag[2]` | [`r betag[1]` - `r betag[3]`]| 8
+$\epsilon_c$ | Efficacy of condoms | `r epsilon_condom[2]`| [`r epsilon_condom[1]` - `r epsilon_condom[3]`]| 9
+$\epsilon_{ART}$ | Efficacy of ART in preventing HIV transmission if virus is suppressed | `r epsilon_art[2]`| [`r epsilon_art[1]` - `r epsilon_art[3]`]| 10
 **Healthcare costs** | | | |
-$c_{care}$ | Average annual healthcare for cost for PLHIV| `r carecost[2]`| [`r carecost[1]` - `r carecost[3]`] |
-$c_{ART}$ | Avergae annual cost of providing ART| `r artcost[2]`| [`r artcost[1]` - `r artcost[3]`] |
-$c_{life}$ | Average lifetime cost of providing healthcare (including ART) post infection | `r lifecost[2]`| [`r lifecost[1]` - `r lifecost[3]`] |
+$c_{care}$ | Average annual healthcare for cost for PLHIV| `r carecost[2]`| [`r carecost[1]` - `r carecost[3]`] | 11
+$c_{ART}$ | Avergae annual cost of providing ART| `r artcost[2]`| [`r artcost[1]` - `r artcost[3]`] | 11
+$c_{life}$ | Average lifetime cost of providing healthcare (including ART) post infection | `r lifecost[2]`| [`r lifecost[1]` - `r lifecost[3]`] | 12
+
+1. [@petoumenos2013australian]     
+2.    
+3. The Second Australian Study of Health and Relationships reported heterosexual men had an average of 1.4 partners in the previous year (95% CI: 1.3-1.4; median 1) and heterosexual women had an average of 0.98 partners in the previous year (95% CI: 0.95-1; median 1) [rissel2014heterosexual]. Seventy four percent of all respondents were in a regular partnership (equal to 89% of those sexually active). On average those in a regular pertnership had vaginal intercourse 1.42 times per week (95% CI: 1.34-1.50). This gives a range of 0.95 x 0.9 x 1.34 x 52 = 59.6 to 1.4 x 0.9 x 1.5 x 52 = 98.3 heterosexual acts per year.
+4.    
+5.    
+6.     
+7.   
+8.    
+9.    
+10.     
+11.     
+
 
 ```{r vectoriseParams, echo = FALSE}
 # Convert parameters to vectors and matrices for running in the calculations. Constants are stored as vectors and time varying 
