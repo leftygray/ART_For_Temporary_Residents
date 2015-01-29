@@ -31,9 +31,10 @@ docFolder <- "docs"
 fileTag <- " Test"  # Tag for output file names to specify scenarios (optional)
 currTime <- format(Sys.time(), "%y-%m-%d %H-%M-%S") # For appending to output files
 
-varFile <- "" # Set to empty to run things a fresh. Manually enter file name to regenerate old results
-saveVars <- TRUE
-saveResults <- TRUE
+loadTag <- "" # Set to empty to run things a fresh. Manually enter file name tag to regenerate old results
+loadResults <- FALSE # Set to FALSE to run things a fresh. If TRUE a corresponding input file needs to exist
+saveVars <- FALSE
+saveResults <- FALSE # If TRUE saveVars is assumed TRUE as well. 
 useSeed <- FALSE
 
 # Check if output directories exist and create if necessary
@@ -43,6 +44,7 @@ if (!file.exists(docFolder)){dir.create(file.path("./",docFolder))}
 # Produce plots in windows for viewing separately and save plots separately
 showPlots <- TRUE
 savePlots <- FALSE
+knitplots <-FALSE
 
 
 ```
@@ -53,15 +55,15 @@ This section summarises the methodology used for the calculations. A simple math
 
 ```{r SimVariables,echo=FALSE}
 # If not loading from previously created file specifiy inputs
-if (nchar(varFile) == 0){
+if (nchar(loadtag) == 0){
   # Initialize parameters for running calculations
-  startyear <- 2015
-  datayears <- 4 # Number of years we have data
+  startyear <- 2012
+  datayears <- 3 # Number of years we have data
   runyears <- 5  # Number of years to run the model
   datafile <- '' # File where all the data is stored. Assumed empty at the moment.
-  numsims <- 200  # Number of 'simulations to run'
-  stochastic <- FALSE   # Run stochastic equations?
-  stochasticSims <- 20 # Number of sims for each parameter set if stochastic calculations are set-up
+  numsims <- 1000  # Number of 'simulations to run'
+  stochastic <- TRUE # Run stochastic equations?
+  stochasticSims <- 10 # Number of sims for each parameter set if stochastic calculations are set-up
   
   # Generate and store a random integer for set.seed so we can rerun things exactly if we want to
   currseed <- sample(1:10^6,1)
@@ -70,7 +72,7 @@ if (nchar(varFile) == 0){
 } else {
   # Save current values of some params as they will be replaced
   oldvarFile <- varFile; oldsaveVars <- saveVars; olduseSeed <- useSeed
-  load(varFile)
+  load(paste(loadTag,' Inputs.R',sep="")
   varFile <- oldvarFile; saveVars <- oldsaveVars; useSeed <- olduseSeed
 }
 ```
@@ -111,16 +113,16 @@ Table 1 lists all input parameters and their values and ranges.
 
 ```{r inputParameters,echo=FALSE}
 # If not loading from previously created file specifiy inputs
-if (nchar(varFile) == 0){
+if (nchar(varTag) == 0 && nchar(resultsTag) == 0){
   # R code to define parameters for simulations. These are defined as uniform ranges [minimum, best guess, maximum]
   # Next version may read this is from an external file. Samples are randomly obtained from these ranges and put into
   #matrices to aid vectorised calculations
   
   # Demographics
-  popsize <- c(300,400,500);   
-  pop_growth <- c(0.8,1,1.1); # Overall relative change in population size
-  prop_f <- c(0.3,0.4,0.5);   
-  prop_m <- c(0.3,0.4,0.5);   
+  popsize <- c(400,450,500);   
+  pop_growth <- c(0.98,1,1.02); # Overall relative change in population size
+  prop_f <- c(0.2,0.25,0.3);   
+  prop_m <- c(0.2,0.23,0.3);   
   # porportion of GBM prop_g is calculated internally so that the proportions add up to 1.
    
   # Clinical parameters
@@ -128,29 +130,29 @@ if (nchar(varFile) == 0){
   # Uncertainty or variation in these values is assumed to be the same over time and have the same relative factor.
   # Next version may read this is from an external file.
   
-  prop_art_base <- c(0.55, 0.8, 0.95, 0.96) # Hard coded
-  prop_vs_base <- c(0.8, 0.92, 0.95, 0.95) # Hard coded
+  prop_art_base <- c(0.63, 0.95,0.95) # Hard coded
+  prop_vs_base <- c(0.7,0.91,0.96) # Hard coded
   
-  prop_art_factor <- c(0.75, 1.25) # Uncertainty in proportion not on ART so we don't get a proportion greater than 1 
-  prop_vs_factor <- c(0.75, 1.25)  # Uncertainty in proportion not on ART so we don't get a proportion greater than 1 
+  prop_art_factor <- c(0.95, 1.05) # Uncertainty in proportion not on ART so we don't get a proportion greater than 1 
+  prop_vs_factor <- c(0.95, 1.05)  # Uncertainty in proportion not on ART so we don't get a proportion greater than 1 
   
   # Behavioural paramters
   # Assumed to remain cosntant over time
   
   heteroacts <- c(60, 80, 100)     # Number of heterosexual acts per year with partners
-  heterocondom <- c(0.1,0.2,0.3)   # Proportion of heterosexual acts where condoms have been used 
-  gbmacts <- c(70,80,90)           # Number of homosexual acts per year with partners
-  gbmcondom <- c(0.5, 0.6, 0.7)    # Proportion of homosexual acts where condoms have been used
+  heterocondom <- c(0.15,0.225,0.3)   # Proportion of heterosexual acts where condoms have been used 
+  gbmacts <- c(20,40,60)           # Number of homosexual acts per year with partners
+  gbmcondom <- c(0.5, 0.575, 0.65)    # Proportion of homosexual acts where condoms have been used
   
   # HIV transmission parameters
   # Assumed to remain constant over time
   
-  betaf <- c(0.0001, 0.0004, 0.0014)  # Female to male per unprotected act  transmission probability
-  betam <- c(0.0006, 0.0008,0.0011)  # Male to female per unprotected act  transmission probability
+  betaf <- c(0.0001, 0.0004, 0.0014)  # Female to male per unprotected act transmission probability
+  betam <- c(0.0006, 0.0008,0.0011)  # Male to female per unprotected act transmission probability
   betag <- c(0.01, 0.014,0.019)       # GBM male to male per unprotected act transmission probability
   
   epsilon_condom <- c(0.8, 0.9, 0.975) # Efficacy of condoms
-  epsilon_art <- c(0.5, 0.7, 0.9)   # Reduction in HIV infectiouness due to viral suppression
+  epsilon_art <- c(0.9, 0.95, 0.99)   # Reduction in HIV infectiouness due to viral suppression
   
   # Healthcare costs
   
@@ -159,8 +161,8 @@ if (nchar(varFile) == 0){
   lifecost <- c(0,0,0)
   
   # Save all the internal variables and parameter values 
-  if (saveVars){
-    save(list = ls(all = TRUE), file = paste(outputFolder, "/", currTime, " Inputs", fileTag, ".R", sep =""))
+  if (saveVars || saveResults){
+    save(list = ls(all = TRUE), file = paste(outputFolder, "/", currTime, fileTag, " Inputs.R", sep =""))
   }
 }
 ```
@@ -197,10 +199,12 @@ $c_{life}$ | Average lifetime cost of providing healthcare (including ART) post 
 
 1. [@petoumenos2013australian]     
 2.    
-3. The Second Australian Study of Health and Relationships reported heterosexual men had an average of 1.4 partners in the previous year (95% CI: 1.3-1.4; median 1) and heterosexual women had an average of 0.98 partners in the previous year (95% CI: 0.95-1; median 1) [rissel2014heterosexual]. Seventy four percent of all respondents were in a regular partnership (equal to 89% of those sexually active). On average those in a regular pertnership had vaginal intercourse 1.42 times per week (95% CI: 1.34-1.50). This gives a range of 0.95 x 0.9 x 1.34 x 52 = 59.6 to 1.4 x 0.9 x 1.5 x 52 = 98.3 heterosexual acts per year.
-4.    
-5.    
-6.     
+3. The Second Australian Study of Health and Relationships reported heterosexual men had an average of 1.4 partners in the previous year (95% CI: 1.3-1.4; median 1) and heterosexual women had an average of 0.98 partners in the previous year (95% CI: 0.95-1; median 1) [@rissel2014heterosexual]. Seventy four percent of all respondents were in a regular partnership (equal to 89% of those sexually active). On average those in a regular pertnership had vaginal intercourse 1.42 times per week (95% CI: 1.34-1.50). This gives a range of 0.95 x 0.9 x 1.34 x 52 = 59.6 to 1.4 x 0.9 x 1.5 x 52 = 98.3 heterosexual acts per year.Based on this data and calculations we assume a range of [`r heteroacts[1]` - `r heteroacts[3]`] acts per year. 
+4. The Second Australian Study of Health and Relationships reported 25.5% and 21.1% of men and women respectively used a condom during most recent sexual encounter involving vaginal sex [@de2014safer]. Based on this data we assume a range of 
+[`r 100*heterocondom[1]` - `r 100*heterocondom[3]`]%.
+   
+5. The Second Australian Study of Health and Relationships reported homosexual men had an average of 6.8 partners in the previous year (95% CI: 5.1-8.5; median 3). Twenty eight percent of homosexual men were in a regular homosexual relationship which we assume 1-2 acts anal intercourse per week with the remaining partnerships being casual with 1-2 acts of anal intercourse per partnership. In terms of sexual acts this data suggests an estimate  0.28 x 2 x 52 = 30 regular acts per year and 6.5 x 2 = 13 casual acts per year - assuming 2 acts of anal intercourse per week for regular partnerships and 2 acts of anal intercourse per casual partner. Based on this data and calculations we assume a range of  [`r gbmacts[1]` - `r gbmacts[3]`].
+6.  The Second Australian Study of Health and Relationships reported 56.7% and 58.9% men engaging in homosexual behaviour used a condom when they last engaged in insertive and receptive anal sex, respectively. Based on this data we assume a range of [`r 100*gbmcondom[1]` - `r 100*gbmcondom[3]`]%.    
 7.   
 8.    
 9.    
@@ -208,7 +212,7 @@ $c_{life}$ | Average lifetime cost of providing healthcare (including ART) post 
 11.     
 
 
-```{r vectoriseParams, echo = FALSE}
+```{r vectoriseParams, echo = FALSE,  messages = FALSE}
 # Convert parameters to vectors and matrices for running in the calculations. Constants are stored as vectors and time varying 
 # parameters are stored as matrices. Each vector element or matrix row represents a specific sampling from the input parmater ranges. 
 
@@ -293,10 +297,12 @@ $$S = \left[\sum_{y = 1}^{years} (N(y)(c_{care} + \theta c_{ART})\right] + \Sigm
 
 Results amd figures will be generated once final methodology is finalized. 
 
-```{r functions,echo = FALSE}
+```{r functions,echo = FALSE, messages = FALSE}
 # Define two functions to calculate the incidence for a population. The second function can either be stocastic or deterministic
 infect_prob <- function(acts,propcondom,effcondom,propart,propvs,effart,beta){
   return(acts*(1-propcondom*effcondom)*(1-propart*propvs*effart)*beta)
+#   return((1-(1-(1-effcondom)*beta)^(acts*propcondom)*(1-beta)*(acts*(1-propcondom))*(1-propart*propvs*effart)))
+#    return((1-(1-(1-propcondom*effcondom)*beta)^acts)*(1-propart*propvs*effart))
 }
 
 popinfects <- function(popsize,prob,stochastic = FALSE){
@@ -309,7 +315,7 @@ popinfects <- function(popsize,prob,stochastic = FALSE){
 }
 ```
 
-```{r calculations, echo=FALSE}
+```{r calculations, echo=FALSE, messages = FALSE}
 # We are now ready to run the code that actually does the calculations for each simulation. This involves looping through each parameter
 # set and calculating the incidence for each population using the current data and the counterfactual levels. <- Using the sampled and
 # best fitting estimates and just the median of all values?? -->
@@ -350,9 +356,9 @@ for (ii in 1:numsims){
                     betamvec[ii]),stochastic)
   
     # Infections casued by hetero males - Baseline
-    infectsmBase[vecIndex,] <- popinfects(popsizemat[ii,]*prop_mvec[ii],infect_prob(heteroactsvec[ii],heterocondomvec[ii],
+    infectsmBase[vecIndex,] <- popinfects(popsizemat[ii,]*prop_mvec[ii],rep(infect_prob(heteroactsvec[ii],heterocondomvec[ii],
                     epsilon_condomvec[ii],prop_art_basemat[ii,1],prop_vs_basemat[ii,1],epsilon_artvec[ii],
-                    betamvec[ii]),stochastic)
+                    betamvec[ii]),runyears),stochastic)
     
     # Infections casused by hetero female - ATRAS
     infectsf[vecIndex,] <- popinfects(popsizemat[ii,]*prop_fvec[ii],infect_prob(heteroactsvec[ii],heterocondomvec[ii],
@@ -360,9 +366,9 @@ for (ii in 1:numsims){
                     betafvec[ii]),stochastic)
     
     # Infections casused by hetero female - Baseline
-    infectsfBase[vecIndex,] <- popinfects(popsizemat[ii,]*prop_fvec[ii],infect_prob(heteroactsvec[ii],heterocondomvec[ii],
+    infectsfBase[vecIndex,] <- popinfects(popsizemat[ii,]*prop_fvec[ii],rep(infect_prob(heteroactsvec[ii],heterocondomvec[ii],
                     epsilon_condomvec[ii],prop_art_basemat[ii,1],prop_vs_basemat[ii,1],epsilon_artvec[ii],
-                    betafvec[ii]),stochastic)
+                    betafvec[ii]),runyears),stochastic)
     
     
     # Infections caused by GBM - ATRAS
@@ -371,17 +377,14 @@ for (ii in 1:numsims){
                     betagvec[ii]),stochastic)
     
     # Infections caused by GBM - BAseline
-    infectsgBase[vecIndex,] <- popinfects(popsizemat[ii,]*(1-prop_mvec[ii]-prop_fvec[ii]),infect_prob(gbmactsvec[ii],gbmcondomvec[ii],
+    infectsgBase[vecIndex,] <- popinfects(popsizemat[ii,]*(1-prop_mvec[ii]-prop_fvec[ii]),rep(infect_prob(gbmactsvec[ii],gbmcondomvec[ii],
                     epsilon_condomvec[ii],prop_art_basemat[ii,1],prop_vs_basemat[ii,1],epsilon_artvec[ii],
-                    betagvec[ii]),stochastic)
+                    betagvec[ii]),runyears),stochastic)
   }
 }
 
 paramSet <- t(paramSet) # Transpose to align with rows of the output matrices
 
-```
-
-```{r reshape, echo=FALSE}
 # Reshape the simulation output into a dataframe so it is easier for analysis and plotting. 
 maleInfects <- melt(t(infectsm)); maleInfects <-maleInfects[c(2,1,3)]; colnames(maleInfects) <- c("simulation","year","infectsbymales")
 femaleInfects <- melt(t(infectsf)); femaleInfects <- femaleInfects[c(2,1,3)]; colnames(femaleInfects) <- 
@@ -417,14 +420,14 @@ newinfections <- newinfections[,c(ncol(newinfections),1:(ncol(newinfections)-1))
 
 # Write results to file
 # Save all the internal variables and parameter values 
-  if (saveResults){
+if (saveResults){
     save(newinfections, file = paste(outputFolder, "/", currTime, " Results", fileTag, ".R", sep =""))
     write.csv(newinfections, file = paste(outputFolder, "/", currTime, " Results", fileTag, ".csv", sep =""))
   }
 
 ```
 
-```{r plotcode, echo=FALSE}
+```{r plotcode, echo=FALSE,messages = FALSE,include=FALSE}
 # Create plots of results
 graphics.off()
 
@@ -455,12 +458,6 @@ simsplot <- simsplot + scale_colour_manual("",breaks = c("Baseline simulations",
 simsplot <- simsplot + ylim(0,round(max(newinfections$totalinfects,newinfections$totalinfectsbase),-1))
 simsplot <- simsplot + xlab("Years since start of ATRAS") + ylab("New infections") + opts
 
-# First plot sims and medians
-# windows(width=6,height=4.5)
-# print(simsplot)
-# dev.print(pdf,file=paste(outputFolder, "/figures/", currTime, " Results", fileTag,".pdf",sep =""))
-# dev.off()
-
 # Plot box plots for cumulative incidence
 
 # Do some data manipulation first
@@ -483,11 +480,24 @@ avertplot <- avertplot + opts + theme(legend.position="none")
 
 # Create a plot for total costs 
 
+
+# Show plots in separate windows and save to file if requested
+
+if (showPlots || savePlots){windows(width=6,height=4.5); print(simsplot)}
+if (savePlots){dev.print(pdf,file=paste(outputFolder, "/figures/", currTime, " Results_Sims", fileTag,".pdf",sep =""))}
+if (showPlots || savePlots){windows(width=12,height=4.5); print(grid.arrange(totalplot,avertplot,ncol = 2))}
+if (savePlots){dev.print(pdf,file=paste(outputFolder, "/figures/", currTime, " Results_total", fileTag,".pdf",sep =""))}
+
 ```
 
-```{r insertyplots, echo=FALSE, messages = FALSE, fig.width=4, fig.height=3}
-print(simsplot)
+```{r insertyplots1, echo=FALSE, messages = FALSE, fig.width=4, fig.height=3}
+if(knitplots){print(simsplot)}
 ```
+
+```{r insertyplots2, echo=FALSE, messages = FALSE, fig.width=6, fig.height=3}
+if(knitplots){print(grid.arrange(totalplot,avertplot,ncol = 2))}
+```
+
 
 ### Discussion
 
