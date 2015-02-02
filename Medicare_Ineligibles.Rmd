@@ -12,40 +12,45 @@ csl: docs/plos.csl
 
 This document summarises a simple methodolgy to calculate the impact of providing anti-retroviral therapy (ART) for free to people living with HIV (PLHIV) in Australia who are medicare ineligible. This analysis uses data from the Australian HIV Obserbvational Database Temporary Residents Access Study (ATRAS) [@petoumenos2013australian].The R code for these calculations is available in the associated Rmarkdown file.
 
-This document is written in dynamic format using R markdown v2 within R studio 0.98.1056 (using R version 3.1.2). Plots are created using the package ggplot2. Further details are available in the associated R markdown file which also contains the R code to produce all the results when the markdown is run. Code blocks have been supressed in the output document. <!--- The document was currently produced using R markdown v2 within Rstudio using `r substr(R.Version()$version.string,1,15)`, knitr, pandoc, and Miktex (for Latex) for producing the associated PDF or Word Document output. To update the results the markdown file needs to be loaded in Rstudio or run using the tools separately. ---> 
+This document is written in dynamic format using R markdown v2 within R studio 0.98.1056 (using R version 3.1.2). Plots are created using the package ggplot2. Further details are available in the associated R markdown file which also contains the R code to produce all the results when the markdown is run. Code blocks have been supressed in the output document. <!--- The document was currently produced using R markdown v2 within Rstudio using `r substr(R.Version()$version.string,1,15)`, knitr, pandoc, and Miktex (for Latex) for producing the associated PDF or Word Document output. The analysis uses the R packages ggplot2, reshape, gridExtra. To update the results the markdown file needs to be loaded in Rstudio or run using the tools separately. ---> 
 
 ```{r initialization,echo = FALSE,messages = FALSE,include=FALSE}
 # Clear workspace
 rm(list=ls()) 
 
-# Load libraries
-# 
+# Load libraries use in the analysis.
 require(ggplot2)
-require(RColorBrewer) # Maybe
 require(reshape2)
 require(gridExtra)
 
-# Before we get started set some overarching variables so we can rerun results instead of generating new ones if necessary
+# Before we get started set some overarching variables so we can rerun results instead of generating new ones if necessary. Store outputs 
+# and initialize other script wide varuables.
 outputFolder <- "output"
 docFolder <- "docs"
-fileTag <- " Test"  # Tag for output file names to specify scenarios (optional)
 currTime <- format(Sys.time(), "%y-%m-%d %H-%M-%S") # For appending to output files
 
-loadTag <- "" # Set to empty to run things a fresh. Manually enter file name tag to regenerate old results
-loadResults <- FALSE # Set to FALSE to run things a fresh. If TRUE a corresponding input file needs to exist
-saveVars <- FALSE
-saveResults <- FALSE # If TRUE saveVars is assumed TRUE as well. 
-useSeed <- FALSE
+# Specifications for loading previously generated results or saving results to file. The basic format of a file string 
+# is date and time + a file tag + " Inputs" or " Results".R. The defaults are set to FALSE and the user has to manually
+# specifify the file to load. This is set up so long simulation runs do not need to be repeated to generate the dcoument. 
+
+loadFileTag <- "" # Set to empty to run things a fresh. Manually enter file name tag to regenerate old results. 
+                  # loadFileTag has the structure of date and time + a file tag " Input.R" and " Results.R" are appended later.
+loadVars <- FALSE # Set to FALSE to run things a fresh.
+loadResults <- FALSE # Set to FALSE to run things a fresh. If TRUE a corresponding input file needs to exist and is loaded as well.
+useSeed <- FALSE  # Use seed in loadVars file to get exactly the same results.
+
+saveFileTag <- " Test"  # Tag for output file names to specify scenarios
+saveVars <- FALSE       # Save input parameters so tehn can be loaded separately
+saveResults <- FALSE    # If TRUE saveVars is assumed TRUE as well. 
 
 # Check if output directories exist and create if necessary
 if (!file.exists(outputFolder)){dir.create(file.path("./",outputFolder))}
 if (!file.exists(docFolder)){dir.create(file.path("./",docFolder))}
 
-# Produce plots in windows for viewing separately and save plots separately
-showPlots <- TRUE
-savePlots <- FALSE
-knitplots <-FALSE
-
+# Produce plots in windows for viewing separately and save plots separately.
+showPlots <- TRUE   # Show plots in separate windows
+savePlots <- FALSE  # Save plots to file
+knitplots <- FALSE  # Insert plots in the produced Rmarkdown document
 
 ```
 
@@ -54,16 +59,15 @@ knitplots <-FALSE
 This section summarises the methodology used for the calculations. A simple mathematical model is used to caluclate the change in population size over time and the number of new infections in partners of medicare ineligible people. Model details, assumptions and input parameters are described below.
 
 ```{r SimVariables,echo=FALSE}
-# If not loading from previously created file specifiy inputs
-if (nchar(loadtag) == 0){
+if (!loadVars || !loadResults){
+  # If not loading from previously created file specifiy inputs
   # Initialize parameters for running calculations
-  startyear <- 2012
-  datayears <- 3 # Number of years we have data
-  runyears <- 5  # Number of years to run the model
-  datafile <- '' # File where all the data is stored. Assumed empty at the moment.
-  numsims <- 1000  # Number of 'simulations to run'
+  startyear <- 2011 # year ATRAS started represents year zero
+  datayears <- 3 # Number of years we have data - year zero and 2 years of followup. 
+  runyears <- 5  # Number of years to run the model. Short term 5 to 10.
+  numsims <- 100  # Number of sampled parameter sets to run
   stochastic <- TRUE # Run stochastic equations?
-  stochasticSims <- 10 # Number of sims for each parameter set if stochastic calculations are set-up
+  stochasticSims <- 1 # Number of sims for each parameter set if stochastic calculations are set-up
   
   # Generate and store a random integer for set.seed so we can rerun things exactly if we want to
   currseed <- sample(1:10^6,1)
@@ -71,9 +75,15 @@ if (nchar(loadtag) == 0){
   
 } else {
   # Save current values of some params as they will be replaced
-  oldvarFile <- varFile; oldsaveVars <- saveVars; olduseSeed <- useSeed
-  load(paste(loadTag,' Inputs.R',sep="")
-  varFile <- oldvarFile; saveVars <- oldsaveVars; useSeed <- olduseSeed
+  oldloadFileTag <- loadFileTag; oldloadVars <- loadVars; oldloadResults <- loadResults; olduseSeed <- useSeed
+  oldsaveFileTag <- saveFileTag; oldsaveVars <- saveVars; oldsaveResults <- saveResults;
+  
+  # Load the file with the saved input parameters
+  load(paste(loadFileTag," Inputs.R",sep=""))
+       
+  # Overwite the input file script variables with their current values. 
+  loadFileTag <- oldvloadFileTag; loadVars <- oldloadVars; loadResults <- oldloadResults; useSeed <- olduseSeed
+  saveFileTag <- oldsaveFileTag; saveVars <- oldsaveVars; saveResults <- oldsaveResults;
 }
 ```
 
@@ -81,16 +91,16 @@ if (nchar(loadtag) == 0){
 
 For this analysis we consider a population of PLHIV who are medicare ineligible with the characteristics of people in ATRAS [@petoumenos2013australian]. The overall population is split into heterosexual males and females, and males who are gay, bisexual or men who have sex with men (GBM). We assume females do not engage in sex work and the population does not include people who inject drugs (PWID). The porportion of people in each of these populations is based on ATRAS data and assumed to be constant over time. This comparmentalisation of the population is used to distinguish the risk of HIV infection rather than treatment coverage and adherence.
 
-The number of medicare ineligibles can change over time with people becoming eligible for medicare provided ART and new temporary residents entering the population. This movement is represented by a constant rate $\pi$ (which is positive for a growing population and negative for a declining population). In ATRAS aproximately 20% of people become medicare eligible and leave the population each year, this would be lower bound on the rate of population change. Letting $N(y)$ equal the total population size in year $y$, the number of medicare ineligible people in the population is then given by
+The number of medicare ineligibles can change over time with people becoming eligible for medicare provided ART and new temporary residents entering the population. This movement is represented by a constant grwoth rate for the population $\pi$ (which is positive for a growing population and negative for a declining population). In ATRAS aproximately 20% of people become medicare eligible and leave the population each year, this would be lower bound on the rate of population change. Letting $N(y)$ equal the total population size in year $y$, the number of medicare ineligible people in the population is then given by
 $$N(y) = N(0)\pi^y,$$.
 
 #### Clinical characteristics
 
-The main aim of this analysis is to investigate the impact on HIV transmission of providing all medicare ineligible people in ATRAS with ART. For the calculations we simply consider the proportion of the population taking ART and the proportion of those on ART with viral suppression. Both of these inputs can change over time based on the ATRAS data. We do not consider different proportions for each population group (BUT WE CAN IF ATRAS HAS THIS DATA). The most recent data value is used for future projections. 
+The main aim of this analysis is to investigate the impact on HIV transmission of providing all medicare ineligible people in ATRAS with ART. For the calculations we simply consider the proportion of the population taking ART and the proportion of those on ART with viral suppression. Both of these inputs can change over time based on the ATRAS data. We do not consider different proportions for each population group. The most recent data value is used for projections beyond the years of vailable data. 
 
 #### HIV transmission to partners
 
-HIV transmission occurs through sexual intercourse between medicare ineligibles and their sexual partners. We assume initiating ART does not change sexual behaviour and the number of partnerships, sexual acts per partnership, and the level of condom use is similar to the overall Medicare eligible population in Australia. We also do not consider onward transmission from newly infected partners. As the sexual behaviour for the ART and non-ART population is the same, we use a simple risk equation model with behavioural parameters set to reflect the overall annual risk of transmission rather than incorporating different partnership types and more complex sexual behaviours. 
+HIV transmission occurs through sexual intercourse between medicare ineligibles and their sexual partners. We assume initiating ART does not change sexual behaviour and the number of partnerships, sexual acts per partnership, and the level of condom use is similar to the overall Medicare eligible population in Australia - with behavioural parameters estimated using date from the Second Australian Study of Health and Relationships [@pitts2014introduction]. We also do not consider onward transmission from newly infected partners. As the sexual behaviour for the ART and non-ART population is the same, we use a simple risk equation approach with behavioural parameters set to reflect the overall annual risk of transmission rather than incorporating different partnership types and more complex sexual behaviours. 
 
 Key assumptions:
 
@@ -106,14 +116,14 @@ Key assumptions:
 
 #### Costs associated with ART provision
 
-Our analysis includes an estimate of the annual cost of providing ART, care and support to Medicare ineligibles and their partners who become infected. We obtained estimates of these costs using previous work for Australian settings [@schneider2014cost]. By summing all costs associated with providing ART to Medicare ineligibles and the average 'lifetime' cost of providing care and support to PLHIV for their infected partners, we estimate the cost per infection averted. 
+Our analysis includes an estimate of the annual cost of providing ART, care and support to Medicare ineligibles and their partners who become infected. We obtained estimates of the costs of providing treatment and care to Medicare ineligibles using previous work for Australian settings [@schneider2014cost]. For sexual partners of Medicare ineligibles we estimate the 'lifetime' cost of providing care and treatment using estimates from the the UNited States [@schackman2006lifetime] (which were the only estimates available). By summing all costs associated with providing ART to Medicare ineligibles and the average lifetime cost of providing care and support to PLHIV for their infected partners, we estimate the cost per infection averted. 
 
 #### Parameter table
 Table 1 lists all input parameters and their values and ranges.
 
 ```{r inputParameters,echo=FALSE}
 # If not loading from previously created file specifiy inputs
-if (nchar(varTag) == 0 && nchar(resultsTag) == 0){
+if (!loadVars && !loadResults){
   # R code to define parameters for simulations. These are defined as uniform ranges [minimum, best guess, maximum]
   # Next version may read this is from an external file. Samples are randomly obtained from these ranges and put into
   #matrices to aid vectorised calculations
@@ -131,7 +141,7 @@ if (nchar(varTag) == 0 && nchar(resultsTag) == 0){
   # Next version may read this is from an external file.
   
   prop_art_base <- c(0.63, 0.95,0.95) # Hard coded
-  prop_vs_base <- c(0.7,0.91,0.96) # Hard coded
+  prop_vs_base <- c(0.7,0.88,0.96) # Hard coded
   
   prop_art_factor <- c(0.95, 1.05) # Uncertainty in proportion not on ART so we don't get a proportion greater than 1 
   prop_vs_factor <- c(0.95, 1.05)  # Uncertainty in proportion not on ART so we don't get a proportion greater than 1 
@@ -151,126 +161,151 @@ if (nchar(varTag) == 0 && nchar(resultsTag) == 0){
   betam <- c(0.0006, 0.0008,0.0011)  # Male to female per unprotected act transmission probability
   betag <- c(0.01, 0.014,0.019)       # GBM male to male per unprotected act transmission probability
   
-  epsilon_condom <- c(0.8, 0.9, 0.975) # Efficacy of condoms
+  epsilon_condom <- c(0.8, 0.95, 0.975) # Efficacy of condoms
   epsilon_art <- c(0.9, 0.95, 0.99)   # Reduction in HIV infectiouness due to viral suppression
   
-  # Healthcare costs
+  # Healthcare and ART costs
   
-  carecost <- c(0,0,0)
-  artcost <- c(0,0,0)
-  lifecost <- c(0,0,0)
+  # ATRAS CD4 data at baseline
+  base350 <- 0.439   # Proportion with CD4 greater than 350 at baseline
+  base200350<- 0.294 # Proportion with CD4 between 200 and 350 at baseline  
+  base200 <- 0.167   # Proportion with CD4 less than 200 at baseline
+  baseMissing <- 0.1 # Proportion with missing CD4 at baseline. Used to normalise basline CD4 values 
+  
+  # Annual medical costs by CD4 count
+  careCost350 <- 4000     # Combiination of cost for CD4 > 500 and CD4 between 350 and 500.
+  careCost200350 <- 4800  # Medical costs for CD4 between 200 and 350
+  careCost200 <- 7900     # Medical costs for CD4 < 200
+  
+  # Weighted average care cost
+  careCostBase <- careCost350*base350/(1-baseMissing) + careCost200350*base200350/(1-baseMissing) + careCost200*base200/(1-baseMissing)
+  
+  carecost <- c(0.75*careCostBase, careCostBase, 1.25*careCostBase)  # Assumed +/- 25% range
+  artcost <- c(7000,11000,15000)                # Assumed everyone is on first line ART
+  lifecost <- c(0.75*620000,620000,1.25*620000) # Undicsounted lifetime cost of providing care and ART 
   
   # Save all the internal variables and parameter values 
   if (saveVars || saveResults){
-    save(list = ls(all = TRUE), file = paste(outputFolder, "/", currTime, fileTag, " Inputs.R", sep =""))
+    save(list = ls(all = TRUE), file = paste(outputFolder, "/", currTime, saveFileTag, " Inputs.R", sep =""))
   }
 }
 ```
 
 
-**Table 1** - Calculation input parameters. Note parameter values and ranges are simple placeholders at the moment. References also need to be found and inserted. 
+**Table 1** - Calculation input parameter ranges. Justifications for these parameter ranges are provided in the endnote
+justifications. Samples are taken from these ranges assumning a uniform distribution. 
 
-Parameter  | Description | Value                                                        | Range | Endnote justification
------------|-------------|--------------------------------------------------------------|-------|-------------------- 
-**Demographic parameters** | | | |
-$N(0)$   | Overall population size in initial year (2014) | `r popsize[2]`| [`r popsize[1]` - `r popsize[3]`] | 1      
-$\pi$ | Rate of entry into population | `r pop_growth[2]` /yr | [`r pop_growth[1]` - `r pop_growth[3]`] | 1          
-$p_f$ | Proportion population female | `r prop_f[2]` | [`r prop_f[1]` - `r prop_f[3]`] | 1
-$p_m$ | Proportion population male | `r prop_m[2]` | [`r prop_m[1]` - `r prop_m[3]`] | 1
-$p_g$ | Proprtion population GBM | $1-p_f-p_m$ | Depends on $p_f$ and $p_m$ values | 1
-**Clinical parameters** | | | |
-$\theta$ | Proportion of population taking ART | ATRAS data| Multiplicative factor [`r prop_art_factor[1]` - `r prop_art_factor[2]`]| 2
-$\psi$ | Proportion of population taking ART | ATRAS data| Multiplicative factor [`r prop_vs_factor[1]` - `r prop_vs_factor[2]`]| 2
-**HIV behavioural parameters** | | | |
-$a_h$ | Annual number of heterosexual acts between females and males| `r heteroacts[2]` | [`r heteroacts[1]` - `r heteroacts[3]`] | 3
-$p^c_h$ | Proportion of heterosexual acts protected with a condom | `r heterocondom[2]` | [`r heterocondom[1]` - `r heterocondom[3]`] | 4
-$a_g$ | Annual number of sexual acts with other GBM| `r gbmacts[2]` | [`r gbmacts[1]` - `r gbmacts[3]`]| 5
-$p^c_g$ | Proportion of GBM acts protected with a condom| `r gbmcondom[2]`| [`r gbmcondom[1]` - `r gbmcondom[3]`]| 6
-**HIV transmission paramaters** | | | |
-$\beta_f$ | Per act transmission probability from females to males | `r betaf[2]`| [`r betaf[1]` - `r betaf[3]`]| 7
-$\beta_m$ | Per act transmission probability from males to females| `r betam[2]`| [`r betam[1]` - `r betam[3]`]| 7
-$\beta_g$ | Per act transmission probability between GBM| `r betag[2]` | [`r betag[1]` - `r betag[3]`]| 8
-$\epsilon_c$ | Efficacy of condoms | `r epsilon_condom[2]`| [`r epsilon_condom[1]` - `r epsilon_condom[3]`]| 9
-$\epsilon_{ART}$ | Efficacy of ART in preventing HIV transmission if virus is suppressed | `r epsilon_art[2]`| [`r epsilon_art[1]` - `r epsilon_art[3]`]| 10
-**Healthcare costs** | | | |
-$c_{care}$ | Average annual healthcare for cost for PLHIV| `r carecost[2]`| [`r carecost[1]` - `r carecost[3]`] | 11
-$c_{ART}$ | Avergae annual cost of providing ART| `r artcost[2]`| [`r artcost[1]` - `r artcost[3]`] | 11
-$c_{life}$ | Average lifetime cost of providing healthcare (including ART) post infection | `r lifecost[2]`| [`r lifecost[1]` - `r lifecost[3]`] | 12
+Parameter  | Description                | Range                                        | Endnote justification
+-----------|----------------------------|----------------------------------------------|----------------------
+**Demographic parameters** | | |    
+$N(0)$   | Overall population size in initial year (2014) |  [`r popsize[1]` - `r popsize[3]`] | 1        
+$\pi$ | Multaplicative change in annual population | [`r pop_growth[1]` - `r pop_growth[3]`]/yr | 1            
+$p_f$ | Proportion of population female | [`r prop_f[1]` - `r prop_f[3]`] | 1
+$p_m$ | Proportion of population heterosexual male |  [`r prop_m[1]` - `r prop_m[3]`] | 1  
+$p_g$ | Proprtion of population who are GBM | Given by the value $1-p_f-p_m$ | 1  
+**Clinical parameters** | | | 
+$\theta$ | Proportion of population taking ART | ATRAS data $\pm$ 5%| 2  
+$\psi$ | Proportion of population taking ART with undetectable viral load | ATRAS data $\pm$ 5% | 2  
+**HIV behavioural parameters** | | | 
+$a_h$ | Annual number of heterosexual acts between females and males| [`r heteroacts[1]` - `r heteroacts[3]`] | 3  
+$p^c_h$ | Proportion of heterosexual acts protected with a condom |  [`r heterocondom[1]` - `r heterocondom[3]`] | 4  
+$a_g$ | Annual number of sexual acts with other GBM |  [`r gbmacts[1]` - `r gbmacts[3]`]| 5  
+$p^c_g$ | Proportion of GBM acts protected with a condom |  [`r gbmcondom[1]` - `r gbmcondom[3]`]| 6  
+**HIV transmission paramaters** | | | 
+$\beta_f$ | Per act transmission probability from females to males |  [`r betaf[1]` - `r betaf[3]`]| 7  
+$\beta_m$ | Per act transmission probability from males to females |  [`r betam[1]` - `r betam[3]`]| 7  
+$\beta_g$ | Per act transmission probability between GBM |  [`r betag[1]` - `r betag[3]`]| 7  
+$\epsilon_c$ | Efficacy of condoms |  [`r epsilon_condom[1]` - `r epsilon_condom[3]`]| 8  
+$\epsilon_{ART}$ | Efficacy of ART in preventing HIV transmission if virus is suppressed | [`r epsilon_art[1]` - `r epsilon_art[3]`]| 9  
+**Healthcare costs** | | | 
+$c_{care}$ | Average annual healthcare for cost for PLHIV | [`r carecost[1]` - `r carecost[3]`] | 10  
+$c_{ART}$ | Avergae annual cost of providing ART | [`r artcost[1]` - `r artcost[3]`] | 11  
+$c_{life}$ | Average lifetime cost of providing healthcare (including ART) post infection | [`r lifecost[1]` - `r lifecost[3]`] | 12  
 
-1. [@petoumenos2013australian]     
-2.    
-3. The Second Australian Study of Health and Relationships reported heterosexual men had an average of 1.4 partners in the previous year (95% CI: 1.3-1.4; median 1) and heterosexual women had an average of 0.98 partners in the previous year (95% CI: 0.95-1; median 1) [@rissel2014heterosexual]. Seventy four percent of all respondents were in a regular partnership (equal to 89% of those sexually active). On average those in a regular pertnership had vaginal intercourse 1.42 times per week (95% CI: 1.34-1.50). This gives a range of 0.95 x 0.9 x 1.34 x 52 = 59.6 to 1.4 x 0.9 x 1.5 x 52 = 98.3 heterosexual acts per year.Based on this data and calculations we assume a range of [`r heteroacts[1]` - `r heteroacts[3]`] acts per year. 
+1. The 2013 ATRAS report estimates there are 450 Medicare ineligible PLHIV in Australia [@petoumenos2013australian]. We assume a range in the population between 400 and 500 PLHIV with the potential for only a small change in population size over time. In the population of 180 at enrolment there were 47 females and 133 males in the cohort with 89 of the males attributing their HIV infection to MSM exposure [@petoumenos2013australian]. Assuming the same demographic distribution over time, we assume 20-30% of the population is female, another 20-30% of the population are male heterosexuals with the remainder GBM.  
+2. At enrolment 62.8% of ATRAS patients were already receiving ART with 71.8% having undetectable viral load [@petoumenos2013australian]. After  enrolment all patients were put onto ART resulting in 87% having undetectable viral load at 12 months and 96% having undetectable viral load at 24 months [@petoumenos2013australian]. Based on the ATRAS data we assume the percenatge of Medicare ineligibles on ART increases from 70% to 95% with a range of $\pm$ 5% with the proportion with undetecvtable virus increasing from 70% to 96% over two years with a range of $\pm$ 5%.   
+3. The Second Australian Study of Health and Relationships reported heterosexual men had an average of 1.4 partners in the previous year (95% CI: 1.3-1.4; median 1) and heterosexual women had an average of 0.98 partners in the previous year (95% CI: 0.95-1; median 1) [@rissel2014heterosexual]. Seventy four percent of all respondents were in a regular partnership (equal to 89% of those sexually active). On average those in a regular pertnership had vaginal intercourse 1.42 times per week (95% CI: 1.34-1.50). This gives a range of 0.95 x 0.9 x 1.34 x 52 = 59.6 to 1.4 x 0.9 x 1.5 x 52 = 98.3 heterosexual acts per year. Based on this data and calculations we assume a range of [`r heteroacts[1]` - `r heteroacts[3]`] acts per year.   
 4. The Second Australian Study of Health and Relationships reported 25.5% and 21.1% of men and women respectively used a condom during most recent sexual encounter involving vaginal sex [@de2014safer]. Based on this data we assume a range of 
-[`r 100*heterocondom[1]` - `r 100*heterocondom[3]`]%.
-   
-5. The Second Australian Study of Health and Relationships reported homosexual men had an average of 6.8 partners in the previous year (95% CI: 5.1-8.5; median 3). Twenty eight percent of homosexual men were in a regular homosexual relationship which we assume 1-2 acts anal intercourse per week with the remaining partnerships being casual with 1-2 acts of anal intercourse per partnership. In terms of sexual acts this data suggests an estimate  0.28 x 2 x 52 = 30 regular acts per year and 6.5 x 2 = 13 casual acts per year - assuming 2 acts of anal intercourse per week for regular partnerships and 2 acts of anal intercourse per casual partner. Based on this data and calculations we assume a range of  [`r gbmacts[1]` - `r gbmacts[3]`].
+[`r 100*heterocondom[1]` - `r 100*heterocondom[3]`]%.   
+5. The Second Australian Study of Health and Relationships reported homosexual men had an average of 6.8 partners in the previous year (95% CI: 5.1-8.5; median 3). Twenty eight percent of homosexual men were in a regular homosexual relationship which we assume involves 1-2 acts of anal intercourse per week with the remaining partnerships being casual with 1-2 acts of anal intercourse per partnership. In terms of sexual acts this data suggests an estimate  0.28 x 2 x 52 = 30 regular acts per year and 6.5 x 2 = 13 casual acts per year - assuming 2 acts of anal intercourse per week for regular partnerships and 2 acts of anal intercourse per casual partner. Based on this data and calculations we assume a range of  [`r gbmacts[1]` - `r gbmacts[3]`].
 6.  The Second Australian Study of Health and Relationships reported 56.7% and 58.9% men engaging in homosexual behaviour used a condom when they last engaged in insertive and receptive anal sex, respectively. Based on this data we assume a range of [`r 100*gbmcondom[1]` - `r 100*gbmcondom[3]`]%.    
-7.   
-8.    
-9.    
-10.     
-11.     
+7. The estimated range for the probaility of HIV transmission through penile-vaginal and anal intercourse are based on systematic reviews and meta-analysis of pooled estimates of female-to-male and male-to-female vaginal transmission and for receptive and insertive anal intercourse [@Boily2009a; @patel2014estimating; @Jin2010].  
+8. This is the per-act reduction in transmission when a condom is used correctly during intercourse. The range we use is based on the results of numerous reviews [@Pinkerton1997; @Weller2002; @holmes2004effectiveness] and accounts for the small risk of slippage and breakage[@Reece2008].   
+9. We assume those with viral suppression have a 96% reduction in transmission to their sexual partners in line with the results from the HPTN-052 trial for those with detectable drug [@cohen2011prevention].         
+10. In a recent paper evaluating the cost effectiveness of PrEP interventions in Australia, Scheider et. al. [@schneider2014cost] provide estimates with ranges of annual medical costs for PLHIV based on their CD4 count: Medical at CD4 $\geq$ 500 cells/$\mu$L, \$3,097 
+(\$1,274-\$7,642); Medical at CD4 350-499 cells/$\mu$L, \$4,402 (\$1,473-\$11,672); Medical at CD4 200-349 cells/$\mu$L, \$4,762 (\$1,833-\$12,032); and Medical at CD4 $<$ 200 cells/$\mu$ L, \$7,883(\$2,465-\$42,400). The baseline ATRAS data provides the proportion of patients in each CD4 category: percentage CD4 $\geq$ 350 cells/$\mu$L, 43.9%; percentage CD4 between 200 and 350 cells/$\mu$L, 29.4%; and percentage CD4 $<$ 200cells/$\mu$L, 16.7% (with 10% missing). Based on these cost estimates and the ATRAS data (adjusted for missing values) we use an annual medical cost estimate = `r careCost350` x `r base350`/(1-`r baseMissing`) + `r careCost200350` x `r base200350`/(1-`r baseMissing`) + ` careCost200` x `r base200`/(1- `r baseMissing`) which gives  a value of `r careCostBase`.  We assume a range of $\pm$ 25%.      
+
+11.At enrolement 83% of the ATRAS cohort on ART were taking Tenofovir/Emtrcitabine (Truvada) as the 'backbone' of their regime. This means the vast majority of those on treatment are taking first-line drugs. For this analysis we assume all patients are on and remain on first-line ART over the period of analysis. From Scheider et. al. the average annual cost of first-line drugs is $10,685 ($6,945-$14,424) [@schneider2014cost]. Using this value we assume a range in the annual ART cost of \$`r artcost[1]-artcost[3]`. Note Scheider et. al. estimate annual drug costs for third and higher lines of ART to be greater than $28,000 per year.   
+12. If a partner of a Medicare ineligible becomes infected with HIV then they will require care and eventually treatment while they are living in Australia. As we are not tracking their infection progression in this analysis we use an estimate for the lifetime cost of providing care and treatment. We found no data specifically for Australia, however, Schackman et al estimated the lifetime cost of HIV care in the United States in 2006 at $618,900 USD (undiscounted) for adults who initiate ART with CD4 $<$ 350 cells/$\mu$ L with a life expectancy of 24.2 years [@schackman2006lifetime]. While pharmaceuticals are priced at a premium compared to Australia, this cost equates to \$25,000 (undiscounted) per year of living with HIV which is comparable to the costs presented in endnote 11. For this analysis we use a value of \$620,000 for the lifetime cost of caring and treating someone who becomes infected with HIV and assume a range of $\pm$ 25%.
 
 
 ```{r vectoriseParams, echo = FALSE,  messages = FALSE}
-# Convert parameters to vectors and matrices for running in the calculations. Constants are stored as vectors and time varying 
-# parameters are stored as matrices. Each vector element or matrix row represents a specific sampling from the input parmater ranges. 
 
-if (useSeed){
-  set.seed(currseed)
+if (!loadResults){
+  # Convert parameters to vectors and matrices for running in the calculations. Constants are stored as vectors and time varying 
+  # parameters are stored as matrices. Each vector element or matrix row represents a specific sampling from the input parmater ranges. 
+  
+  if (useSeed){
+    set.seed(currseed)
+  } else {
+    set.seed(NULL)
+  }
+  
+  # Demograhic parameters - Population size calulated by combining the initial population size and growth rate. As it is time varying 
+  # population size is stored as a matrix
+  popsizemat <- matrix(0,numsims,runyears)
+  for (ii in 1:numsims){
+    popsizemat[ii,] <- runif(1,popsize[1],popsize[2]) * runif(1,pop_growth[1],pop_growth[2])^c(1:runyears)
+  }
+  
+  prop_fvec <- runif(numsims,prop_f[1],prop_f[3])
+  prop_mvec <- runif(numsims,prop_m[1],prop_m[3])
+  
+  # Clinical parameters (matrices). This is done by first converting proportions on ART and with viral suppression to vectors of 
+  # equal length to number of simulation years and then inverting twice so the uncertianty factor does not produce a value great than 1. 
+  # If the number of simulations years is greater than the number of data values the final data value is assumed to remain constant.
+  
+  prop_art_baseVec <- prop_art_base[length(prop_art_base)] * rep(1,runyears)
+  prop_art_baseVec[1:length(prop_art_base)] <- prop_art_base  # Replace start of vector with data values
+  
+  prop_vs_baseVec <- prop_vs_base[length(prop_vs_base)] * rep(1,runyears)
+  prop_vs_baseVec[1:length(prop_vs_base)] <- prop_vs_base  # Replace start of vector with data values
+  
+  
+  # Now create matrix of values by looping over number of simulations
+  prop_art_basemat <- matrix(0,numsims,runyears)
+  prop_vs_basemat <- matrix(0,numsims,runyears)
+  for (ii in 1:numsims) {
+     # Sample from multiplicative factor
+    tempFactor_art <- runif(1,prop_art_factor[1],prop_art_factor[2]) 
+    tempFactor_vs <- runif(1,prop_vs_factor[1],prop_vs_factor[2])
+  #   
+    # Do double inversion and store in the row
+    prop_art_basemat[ii,] <- 1-tempFactor_art * (1-prop_art_baseVec)
+    prop_vs_basemat[ii,] <- 1-tempFactor_vs * (1-prop_vs_baseVec)
+  }
+  
+  # Behavioural paramaters (vectors)
+  heteroactsvec <- runif(numsims,heteroacts[1],heteroacts[3])
+  heterocondomvec <- runif(numsims,heterocondom[1],heterocondom[3])
+  gbmactsvec <- runif(numsims,gbmacts[1],gbmacts[3])
+  gbmcondomvec <- runif(numsims,gbmcondom[1],gbmcondom[3])
+  
+  # Transmission parameters (vectors)
+  betafvec <- runif(numsims,betaf[1],betaf[3])
+  betamvec <- runif(numsims,betam[1],betam[3])
+  betagvec <- runif(numsims,betag[1],betag[3])
+  
+  epsilon_condomvec <- runif(numsims,epsilon_condom[1],epsilon_condom[3])
+  epsilon_artvec <- runif(numsims,epsilon_art[1],epsilon_art[3])
+  
+  # Cost parameters
+
 } else {
-  set.seed(NULL)
+  # Load previously generated results
+  load(paste(loadFileTag," Results.R",sep=""))
 }
 
-# Demograhic parameters - Population size calulated by combining the initial population size and growth rate. As it is time varying 
-# population size is stored as a matrix
-popsizemat <- matrix(0,numsims,runyears)
-for (ii in 1:numsims){
-  popsizemat[ii,] <- runif(1,popsize[1],popsize[2]) * runif(1,pop_growth[1],pop_growth[2])^c(1:runyears)
-}
-
-prop_fvec <- runif(numsims,prop_f[1],prop_f[3])
-prop_mvec <- runif(numsims,prop_m[1],prop_m[3])
-
-# Clinical parameters (matrices). This is done by first converting proportions on ART and with viral suppression to vectors of 
-# equal length to number of simulation years and then inverting twice so the uncertianty factor does not produce a value great than 1. 
-# If the number of simulations years is greater than the number of data values the final data value is assumed to remain constant.
-
-prop_art_baseVec <- prop_art_base[length(prop_art_base)] * rep(1,runyears)
-prop_art_baseVec[1:length(prop_art_base)] <- prop_art_base  # Replace start of vector with data values
-
-prop_vs_baseVec <- prop_vs_base[length(prop_vs_base)] * rep(1,runyears)
-prop_vs_baseVec[1:length(prop_vs_base)] <- prop_vs_base  # Replace start of vector with data values
-
-
-# Now create matrix of values by looping over number of simulations
-prop_art_basemat <- matrix(0,numsims,runyears)
-prop_vs_basemat <- matrix(0,numsims,runyears)
-for (ii in 1:numsims) {
-   # Sample from multiplicative factor
-  tempFactor_art <- runif(1,prop_art_factor[1],prop_art_factor[2]) 
-  tempFactor_vs <- runif(1,prop_vs_factor[1],prop_vs_factor[2])
-#   
-  # Do double inversion and store in the row
-  prop_art_basemat[ii,] <- 1-tempFactor_art * (1-prop_art_baseVec)
-  prop_vs_basemat[ii,] <- 1-tempFactor_vs * (1-prop_vs_baseVec)
-}
-
-# Behavioural paramaters (vectors)
-heteroactsvec <- runif(numsims,heteroacts[1],heteroacts[3])
-heterocondomvec <- runif(numsims,heterocondom[1],heterocondom[3])
-gbmactsvec <- runif(numsims,gbmacts[1],gbmacts[3])
-gbmcondomvec <- runif(numsims,gbmcondom[1],gbmcondom[3])
-
-# Transmission parameters (vectors)
-betafvec <- runif(numsims,betaf[1],betaf[3])
-betamvec <- runif(numsims,betam[1],betam[3])
-betagvec <- runif(numsims,betag[1],betag[3])
-
-epsilon_condomvec <- runif(numsims,epsilon_condom[1],epsilon_condom[3])
-epsilon_artvec <- runif(numsims,epsilon_art[1],epsilon_art[3])
-
-# Cost parameters
 
 ````
 
@@ -280,13 +315,20 @@ The overall number of new infections per year is calculated by summing the numbe
 
 Letting the index $x$ represent one of the populations groups (and droping $y$ for the time being), the probability of HIV transmission without ART is given by 
 $$\beta'_x = a_x(1-p^c_x)\beta_x + a_x p^c_x (1- \epsilon_c)\beta_x$$ or 
-$$\beta'_x = a_x (1-p^c_x\epsilon_x)\beta_x.$$ For $x = f$, $m$ the number of acts and condom use are equal and given by the index $h$. Similarly we can incorporate the prevention effects of treatment and suppressed virus. For a given population, 
-$$I_x = Np_x[(1-\theta)\beta'_x + \theta(1-\psi)\beta'_x + \theta\psi(1-\epsilon_{ART})\beta'_x]$$ 
+$$\beta'_x = a_x (1-p^c_x\epsilon_x)\beta_x.$$ For $x = f$, $m$ the number of acts and condom use are equal and given by the index $h$. Similarly we can incorporate the prevention effects of treatment and suppressed virus, to give
+$$\beta"_x = p_x[(1-\theta)\beta'_x + \theta(1-\psi)\beta'_x + \theta\psi(1-\epsilon_{ART})\beta'_x]$$ 
 as ineffective treatment (resulting in unsuppressed virus) has the same transmission probability as no treatment. After some algebra this gives
-$$I_x = Np_x(1-\theta\psi\epsilon_{ART})\beta'_x.$$
+$$\beta"_x = p_x(1-\theta\psi\epsilon_{ART})\beta'_x.$$
 
-Adding all the population terms together and substituting in the equation for $\beta'_x$ gives (after some algebra) the overall risk equation for the number of new infections in a given year $y$,
-$$I(y) = N(y)[a_h(1-p^c_h\epsilon_c)(p_f \beta_f + p_m \beta_m) + a_g(1-p^c_g\epsilon_c) p_g \beta_g](1-\theta(y)\psi(y)\epsilon_{ART}).$$ 
+
+
+Adding all the population terms together gives the overall number of new infections in a given year $y$,
+
+$$I(y) = [a_h(1-p^c_h\epsilon_c)(p_f \beta_f + p_m \beta_m) + a_g(1-p^c_g\epsilon_c) p_g \beta_g](1-\theta(y)\psi(y)\epsilon_{ART}).$$ 
+
+$$I(y) = 
+
+
 The cumulative number of new infections in partners of medicare ineligibles over $y$ years is then equal to
 $$\Sigma = \sum_{y = 1}^{years} I(y).$$
 
@@ -316,114 +358,117 @@ popinfects <- function(popsize,prob,stochastic = FALSE){
 ```
 
 ```{r calculations, echo=FALSE, messages = FALSE}
-# We are now ready to run the code that actually does the calculations for each simulation. This involves looping through each parameter
-# set and calculating the incidence for each population using the current data and the counterfactual levels. <- Using the sampled and
-# best fitting estimates and just the median of all values?? -->
-
-# Determine how many runs to do for each parameter set
-if (stochastic){
-  numruns <- stochasticSims
-} else {
-  numruns <- 1
-}
-
-# Initialize output arrays
-paramSet <- vector()
-
-# For ATRAS simulations
-infectsm <- matrix(0,numsims*numruns,runyears)
-infectsf <- matrix(0,numsims*numruns,runyears)
-infectsg <- matrix(0,numsims*numruns,runyears)
-
-# For baseline simulations
-infectsmBase <- matrix(0,numsims*numruns,runyears)
-infectsfBase <- matrix(0,numsims*numruns,runyears)
-infectsgBase <- matrix(0,numsims*numruns,runyears)
-
-# Do the calculations
-for (ii in 1:numsims){
-
-  for (jj in 1:numruns){
-    # Row index for storage in output matrices
-    vecIndex <- (ii-1)*numruns + jj
-    
-    # Store parameter set index
-    paramSet <- c(paramSet,ii*matrix(1,runyears,1))
-     
-    # Infections casued by hetero males - ATRAS
-    infectsm[vecIndex,] <- popinfects(popsizemat[ii,]*prop_mvec[ii],infect_prob(heteroactsvec[ii],heterocondomvec[ii],
-                    epsilon_condomvec[ii],prop_art_basemat[ii,],prop_vs_basemat[ii,],epsilon_artvec[ii],
-                    betamvec[ii]),stochastic)
+if (!loadResults){
+  # We are now ready to run the code that actually does the calculations for each simulation. This involves looping through each parameter
+  # set and calculating the incidence for each population using the current data and the counterfactual levels. <- Using the sampled and
+  # best fitting estimates and just the median of all values?? -->
   
-    # Infections casued by hetero males - Baseline
-    infectsmBase[vecIndex,] <- popinfects(popsizemat[ii,]*prop_mvec[ii],rep(infect_prob(heteroactsvec[ii],heterocondomvec[ii],
-                    epsilon_condomvec[ii],prop_art_basemat[ii,1],prop_vs_basemat[ii,1],epsilon_artvec[ii],
-                    betamvec[ii]),runyears),stochastic)
-    
-    # Infections casused by hetero female - ATRAS
-    infectsf[vecIndex,] <- popinfects(popsizemat[ii,]*prop_fvec[ii],infect_prob(heteroactsvec[ii],heterocondomvec[ii],
-                    epsilon_condomvec[ii],prop_art_basemat[ii,],prop_vs_basemat[ii,],epsilon_artvec[ii],
-                    betafvec[ii]),stochastic)
-    
-    # Infections casused by hetero female - Baseline
-    infectsfBase[vecIndex,] <- popinfects(popsizemat[ii,]*prop_fvec[ii],rep(infect_prob(heteroactsvec[ii],heterocondomvec[ii],
-                    epsilon_condomvec[ii],prop_art_basemat[ii,1],prop_vs_basemat[ii,1],epsilon_artvec[ii],
-                    betafvec[ii]),runyears),stochastic)
-    
-    
-    # Infections caused by GBM - ATRAS
-    infectsg[vecIndex,] <- popinfects(popsizemat[ii,]*(1-prop_mvec[ii]-prop_fvec[ii]),infect_prob(gbmactsvec[ii],gbmcondomvec[ii],
-                    epsilon_condomvec[ii],prop_art_basemat[ii,],prop_vs_basemat[ii,],epsilon_artvec[ii],
-                    betagvec[ii]),stochastic)
-    
-    # Infections caused by GBM - BAseline
-    infectsgBase[vecIndex,] <- popinfects(popsizemat[ii,]*(1-prop_mvec[ii]-prop_fvec[ii]),rep(infect_prob(gbmactsvec[ii],gbmcondomvec[ii],
-                    epsilon_condomvec[ii],prop_art_basemat[ii,1],prop_vs_basemat[ii,1],epsilon_artvec[ii],
-                    betagvec[ii]),runyears),stochastic)
+  # Determine how many runs to do for each parameter set
+  if (stochastic){
+    numruns <- stochasticSims
+  } else {
+    numruns <- 1
   }
-}
-
-paramSet <- t(paramSet) # Transpose to align with rows of the output matrices
-
-# Reshape the simulation output into a dataframe so it is easier for analysis and plotting. 
-maleInfects <- melt(t(infectsm)); maleInfects <-maleInfects[c(2,1,3)]; colnames(maleInfects) <- c("simulation","year","infectsbymales")
-femaleInfects <- melt(t(infectsf)); femaleInfects <- femaleInfects[c(2,1,3)]; colnames(femaleInfects) <- 
-  c("simulation","year","infectsbyfemales") 
-gbmInfects <- melt(t(infectsg)); gbmInfects <- gbmInfects[c(2,1,3)]; colnames(gbmInfects) <- c("simulation","year","infectsbygbm")
-
-maleInfectsBase <- melt(t(infectsmBase)); maleInfectsBase <-maleInfectsBase[c(2,1,3)]; colnames(maleInfectsBase) <- c("simulation","year","infectsbymalesbase")
-femaleInfectsBase <- melt(t(infectsfBase)); femaleInfectsBase <- femaleInfectsBase[c(2,1,3)]; colnames(femaleInfectsBase) <- 
-  c("simulation","year","infectsbyfemalesbase") 
-gbmInfectsBase <- melt(t(infectsgBase)); gbmInfectsBase <- gbmInfectsBase[c(2,1,3)]; colnames(gbmInfectsBase) <- c("simulation","year","infectsbygbmbase")
-
-# Merge the results we want into one data frame, order simulations and append parameterset number. Each observation represents a 
-# single calculation of incidence
-newinfections <- merge(maleInfects,femaleInfects,all=TRUE)
-newinfections <- merge(newinfections,gbmInfects,all=TRUE)
-newinfections$totalinfects <- newinfections$infectsbymales + newinfections$infectsbyfemales + newinfections$infectsbygbm
-
-# Baseline results
-newinfections <- merge(newinfections,maleInfectsBase,all=TRUE)
-newinfections <- merge(newinfections,femaleInfectsBase,all=TRUE)
-newinfections <- merge(newinfections,gbmInfectsBase,all=TRUE)
-newinfections$totalinfectsbase <- newinfections$infectsbymalesbase + newinfections$infectsbyfemalesbase + newinfections$infectsbygbmbase
-
-# Averted infections
-newinfections$infectsaverted <- (newinfections$totalinfectsbase - newinfections$totalinfects)
   
-# Order by simulation number
-newinfections <- newinfections[order(newinfections$simulation),]
-
-# Add parameterset number and reorder to put in first column
-newinfections$paramset <- t(paramSet) 
-newinfections <- newinfections[,c(ncol(newinfections),1:(ncol(newinfections)-1))] 
-
-# Write results to file
-# Save all the internal variables and parameter values 
-if (saveResults){
-    save(newinfections, file = paste(outputFolder, "/", currTime, " Results", fileTag, ".R", sep =""))
-    write.csv(newinfections, file = paste(outputFolder, "/", currTime, " Results", fileTag, ".csv", sep =""))
+  # Initialize output arrays
+  paramSet <- vector()
+  
+  # For ATRAS simulations
+  infectsm <- matrix(0,numsims*numruns,runyears)
+  infectsf <- matrix(0,numsims*numruns,runyears)
+  infectsg <- matrix(0,numsims*numruns,runyears)
+  
+  # For baseline simulations
+  infectsmBase <- matrix(0,numsims*numruns,runyears)
+  infectsfBase <- matrix(0,numsims*numruns,runyears)
+  infectsgBase <- matrix(0,numsims*numruns,runyears)
+  
+  # Do the calculations
+  for (ii in 1:numsims){
+  
+    for (jj in 1:numruns){
+      # Row index for storage in output matrices
+      vecIndex <- (ii-1)*numruns + jj
+      
+      # Store parameter set index
+      paramSet <- c(paramSet,ii*matrix(1,runyears,1))
+       
+      # Infections casued by hetero males - ATRAS
+      infectsm[vecIndex,] <- popinfects(popsizemat[ii,]*prop_mvec[ii],infect_prob(heteroactsvec[ii],heterocondomvec[ii],
+                      epsilon_condomvec[ii],prop_art_basemat[ii,],prop_vs_basemat[ii,],epsilon_artvec[ii],
+                      betamvec[ii]),stochastic)
+    
+      # Infections casued by hetero males - Baseline
+      infectsmBase[vecIndex,] <- popinfects(popsizemat[ii,]*prop_mvec[ii],rep(infect_prob(heteroactsvec[ii],heterocondomvec[ii],
+                      epsilon_condomvec[ii],prop_art_basemat[ii,1],prop_vs_basemat[ii,1],epsilon_artvec[ii],
+                      betamvec[ii]),runyears),stochastic)
+      
+      # Infections casused by hetero female - ATRAS
+      infectsf[vecIndex,] <- popinfects(popsizemat[ii,]*prop_fvec[ii],infect_prob(heteroactsvec[ii],heterocondomvec[ii],
+                      epsilon_condomvec[ii],prop_art_basemat[ii,],prop_vs_basemat[ii,],epsilon_artvec[ii],
+                      betafvec[ii]),stochastic)
+      
+      # Infections casused by hetero female - Baseline
+      infectsfBase[vecIndex,] <- popinfects(popsizemat[ii,]*prop_fvec[ii],rep(infect_prob(heteroactsvec[ii],heterocondomvec[ii],
+                      epsilon_condomvec[ii],prop_art_basemat[ii,1],prop_vs_basemat[ii,1],epsilon_artvec[ii],
+                      betafvec[ii]),runyears),stochastic)
+      
+      
+      # Infections caused by GBM - ATRAS
+      infectsg[vecIndex,] <- popinfects(popsizemat[ii,]*(1-prop_mvec[ii]-prop_fvec[ii]),infect_prob(gbmactsvec[ii],gbmcondomvec[ii],
+                      epsilon_condomvec[ii],prop_art_basemat[ii,],prop_vs_basemat[ii,],epsilon_artvec[ii],
+                      betagvec[ii]),stochastic)
+      
+      # Infections caused by GBM - BAseline
+      infectsgBase[vecIndex,] <- popinfects(popsizemat[ii,]*(1-prop_mvec[ii]-prop_fvec[ii]),rep(infect_prob(gbmactsvec[ii],gbmcondomvec[ii],
+                      epsilon_condomvec[ii],prop_art_basemat[ii,1],prop_vs_basemat[ii,1],epsilon_artvec[ii],
+                      betagvec[ii]),runyears),stochastic)
+    }
   }
+  
+  paramSet <- t(paramSet) # Transpose to align with rows of the output matrices
+  
+  # Reshape the simulation output into a dataframe so it is easier for analysis and plotting. 
+  maleInfects <- melt(t(infectsm)); maleInfects <-maleInfects[c(2,1,3)]; colnames(maleInfects) <- c("simulation","year","infectsbymales")
+  femaleInfects <- melt(t(infectsf)); femaleInfects <- femaleInfects[c(2,1,3)]; colnames(femaleInfects) <- 
+    c("simulation","year","infectsbyfemales") 
+  gbmInfects <- melt(t(infectsg)); gbmInfects <- gbmInfects[c(2,1,3)]; colnames(gbmInfects) <- c("simulation","year","infectsbygbm")
+  
+  maleInfectsBase <- melt(t(infectsmBase)); maleInfectsBase <-maleInfectsBase[c(2,1,3)]; colnames(maleInfectsBase) <- c("simulation","year","infectsbymalesbase")
+  femaleInfectsBase <- melt(t(infectsfBase)); femaleInfectsBase <- femaleInfectsBase[c(2,1,3)]; colnames(femaleInfectsBase) <- 
+    c("simulation","year","infectsbyfemalesbase") 
+  gbmInfectsBase <- melt(t(infectsgBase)); gbmInfectsBase <- gbmInfectsBase[c(2,1,3)]; colnames(gbmInfectsBase) <- c("simulation","year","infectsbygbmbase")
+  
+  # Merge the results we want into one data frame, order simulations and append parameterset number. Each observation represents a 
+  # single calculation of incidence
+  newinfections <- merge(maleInfects,femaleInfects,all=TRUE)
+  newinfections <- merge(newinfections,gbmInfects,all=TRUE)
+  newinfections$totalinfects <- newinfections$infectsbymales + newinfections$infectsbyfemales + newinfections$infectsbygbm
+  
+  # Baseline results
+  newinfections <- merge(newinfections,maleInfectsBase,all=TRUE)
+  newinfections <- merge(newinfections,femaleInfectsBase,all=TRUE)
+  newinfections <- merge(newinfections,gbmInfectsBase,all=TRUE)
+  newinfections$totalinfectsbase <- newinfections$infectsbymalesbase + newinfections$infectsbyfemalesbase + newinfections$infectsbygbmbase
+  
+  # Averted infections
+  newinfections$infectsaverted <- (newinfections$totalinfectsbase - newinfections$totalinfects)
+    
+  # Order by simulation number
+  newinfections <- newinfections[order(newinfections$simulation),]
+  
+  # Add parameterset number and reorder to put in first column
+  newinfections$paramset <- t(paramSet) 
+  newinfections <- newinfections[,c(ncol(newinfections),1:(ncol(newinfections)-1))] 
+  
+  # Write results to file
+  # Save all the internal variables and parameter values 
+  if (saveResults){
+      save(newinfections, file = paste(outputFolder, "/", currTime, " Results", fileTag, ".R", sep =""))
+      write.csv(newinfections, file = paste(outputFolder, "/", currTime, " Results", fileTag, ".csv", sep =""))
+    }
+
+}
 
 ```
 
@@ -479,7 +524,6 @@ avertplot <- avertplot + opts + theme(legend.position="none")
 # print(grid.arrange(totalplot,avertplot,ncol = 2))
 
 # Create a plot for total costs 
-
 
 # Show plots in separate windows and save to file if requested
 
