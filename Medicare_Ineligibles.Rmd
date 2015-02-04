@@ -64,9 +64,9 @@ if (!loadVars || !loadResults){
   # Initialize parameters for running calculations
   startyear <- 2011 # year ATRAS started represents year zero
   datayears <- 3 # Number of years we have data - year zero and 2 years of followup. 
-  runyears <- 5  # Number of years to run the model. Short term 5 to 10.
-  numsims <- 100  # Number of sampled parameter sets to run
-  stochastic <- TRUE # Run stochastic equations?
+  runyears <- 6  # Number of years to run the model. Short term 5 to 10.
+  numsims <- 10  # Number of sampled parameter sets to run
+  stochastic <- FALSE # Run stochastic equations?
   stochasticSims <- 1 # Number of sims for each parameter set if stochastic calculations are set-up
   
   # Generate and store a random integer for set.seed so we can rerun things exactly if we want to
@@ -300,6 +300,9 @@ if (!loadResults){
   epsilon_artvec <- runif(numsims,epsilon_art[1],epsilon_art[3])
   
   # Cost parameters
+  costcarevec <- runif(numsims,carecost[1],carecost[3])
+  costartvec <-  runif(numsims,artcost[1],artcost[3])
+  costlifevec <- runif(numsims,lifecost[1],lifecost[3])
 
 } else {
   # Load previously generated results
@@ -328,10 +331,17 @@ and the number of new infections is given by a risk equation. <!--- In the Rmark
 Adding all the population terms together gives the overall number of new infections $I(y)$ in a given year $y$. The cumulative number of new infections in partners of medicare ineligibles over $y$ years is then equal to
 $$\Sigma = \sum_{y = 1}^{years} I(y).$$
 
-The total cost of providing ART and healthcare to Medicare ineligibles and infected partners is then given by
-$$S = \left[\sum_{y = 1}^{years} (N(y)(c_{care} + \theta c_{ART})\right] + \Sigma c_{life}.$$
+The total cost of providing ART and healthcare to Medicare ineligibles is then given by
+$$\left[\sum_{y = 1}^{years} (N(y)(c_{care} + \theta c_{ART})\right]$$
+and the future costs of providing care and tretament to newly infected partners of Medicare ineligibles is
+$$\Sigma c_{life}.$$
+
+#### Simulations
+
+To perform this analysis, we generated `r numsims` input parameter sets by sampling from each of the parameter ranges in Table 1. For each of these parameter sets we then ran `r stochasticSims` simulations to account for stochastic variations. Each simulation was ran for `r runyears` since the enrolment of patients into ATRAS. Summary statistics were then calculated using the results from each simulation.  
 
 ### Results
+
 
 
 ```{r functions,echo = FALSE, messages = FALSE}
@@ -372,6 +382,7 @@ if (!loadResults){
   infectsm <- matrix(0,numsims*numruns,runyears)
   infectsf <- matrix(0,numsims*numruns,runyears)
   infectsg <- matrix(0,numsims*numruns,runyears)
+  costAtras <- matrix(0,numsims*numruns,runyears)
   
   # For baseline simulations
   infectsmBase <- matrix(0,numsims*numruns,runyears)
@@ -418,9 +429,13 @@ if (!loadResults){
       infectsgBase[vecIndex,] <- popinfects(popsizemat[ii,]*(1-prop_mvec[ii]-prop_fvec[ii]),rep(infect_prob(gbmactsvec[ii],gbmcondomvec[ii],
                       epsilon_condomvec[ii],prop_art_basemat[ii,1],prop_vs_basemat[ii,1],epsilon_artvec[ii],
                       betagvec[ii]),runyears),stochastic)
+      
+      # Cost of providing ART
+      costAtras[vecIndex,] <- popsizemat[ii,]*(costcarevec[ii]+costartvec[ii])
+      
     }
   }
-  
+
   paramSet <- t(paramSet) # Transpose to align with rows of the output matrices
   
   # Reshape the simulation output into a dataframe so it is easier for analysis and plotting. 
@@ -433,6 +448,8 @@ if (!loadResults){
   femaleInfectsBase <- melt(t(infectsfBase)); femaleInfectsBase <- femaleInfectsBase[c(2,1,3)]; colnames(femaleInfectsBase) <- 
     c("simulation","year","infectsbyfemalesbase") 
   gbmInfectsBase <- melt(t(infectsgBase)); gbmInfectsBase <- gbmInfectsBase[c(2,1,3)]; colnames(gbmInfectsBase) <- c("simulation","year","infectsbygbmbase")
+  
+  costAtrasVec <- melt(t(costAtras)); costAtrasVec <- costAtrasVec[c(2,1,3)]; colnames(costAtrasVec) <- c("simulation","year","costatras")
   
   # Merge the results we want into one data frame, order simulations and append parameterset number. Each observation represents a 
   # single calculation of incidence
@@ -448,13 +465,21 @@ if (!loadResults){
   
   # Averted infections
   newinfections$infectsaverted <- (newinfections$totalinfectsbase - newinfections$totalinfects)
-    
+  
+  # Costs
+  newinfections <- merge(newinfections,costAtrasVec,all=TRUE)
+  newinfections$lifecostbase <- newinfections$totalinfectsbase * costlifevec
+  newinfections$lifecostatras <- newinfections$totalinfects * costlifevec
+
   # Order by simulation number
   newinfections <- newinfections[order(newinfections$simulation),]
   
   # Add parameterset number and reorder to put in first column
   newinfections$paramset <- t(paramSet) 
   newinfections <- newinfections[,c(ncol(newinfections),1:(ncol(newinfections)-1))] 
+  
+  # Subtract a year from year column to start things at year zero
+  newinfections$year <- newinfections$year - 1
   
   # Write results to file
   # Save all the internal variables and parameter values 
@@ -517,6 +542,11 @@ avertplot <- avertplot + xlab("Averted infections") + ylab("Density")
 avertplot <- avertplot + opts + theme(legend.position="none")
 
 # Create a plot for total costs 
+costs <- melt(newinfections,id.vars=c("year","simulation"),measure.vars=c("costatras","lifecostbase","lifecostatras"),variable.name="scenario",value.name="totalcost")
+costsSum <- aggregate(totalcost ~ simulation + scenario, data=costs, FUN=sum)
+
+costplot <- ggplot(data = costsSum,aes(x=scenario,y=totalcost)) + theme_bw() + geom_bar(stat="identity")
+print(costplot)
 
 
 
@@ -525,7 +555,10 @@ avertplot <- avertplot + opts + theme(legend.position="none")
 if (showPlots || savePlots){windows(width=6,height=4.5); print(simsplot)}
 if (savePlots){dev.print(pdf,file=paste(outputFolder, "/figures/", currTime, " Results_Sims", fileTag,".pdf",sep =""))}
 if (showPlots || savePlots){windows(width=12,height=4.5); print(grid.arrange(totalplot,avertplot,ncol = 2))}
-if (savePlots){dev.print(pdf,file=paste(outputFolder, "/figures/", currTime, " Results_total", fileTag,".pdf",sep =""))}
+if (savePlots){dev.print(pdf,file=paste(outputFolder, "/figures/", currTime, " Results_Total", fileTag,".pdf",sep =""))}
+if (showPlots || savePlots){windows(width=6,height=4.5); print(costplot)}
+if (savePlots){dev.print(pdf,file=paste(outputFolder, "/figures/", currTime, " Results_Costs", fileTag,".pdf",sep =""))}
+
 
 ```
 
@@ -537,6 +570,10 @@ if(knitplots){print(simsplot)}
 if(knitplots){print(grid.arrange(totalplot,avertplot,ncol = 2))}
 ```
 
+```{r }
+if(knitplots){print(costplot)}
+
+```
 
 
 ### Discussion
