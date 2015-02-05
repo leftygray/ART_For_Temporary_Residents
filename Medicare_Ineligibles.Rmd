@@ -10,7 +10,7 @@ bibliography: docs/medicare_ineligibles.bib
 csl: docs/plos.csl
 ---
 
-This document summarises a simple methodolgy to calculate the impact of providing anti-retroviral therapy (ART) for free to people living with HIV (PLHIV) in Australia who are medicare ineligible. This analysis uses data from the Australian HIV Obserbvational Database Temporary Residents Access Study (ATRAS) [@petoumenos2013australian].The R code for these calculations is available in the associated Rmarkdown file.
+This document summarises a simple analysis to calculate the impact of providing anti-retroviral therapy (ART) for free to people living with HIV (PLHIV) in Australia who are medicare ineligible. This analysis uses data from the Australian HIV Obserbvational Database Temporary Residents Access Study (ATRAS) [@petoumenos2013australian].The R code for these calculations is available in the associated Rmarkdown file.
 
 This document is written in dynamic format using R markdown v2 within R studio 0.98.1056 (using R version 3.1.2). Plots are created using the package ggplot2. Further details are available in the associated R markdown file which also contains the R code to produce all the results when the markdown is run. Code blocks have been supressed in the output document. <!--- The document was currently produced using R markdown v2 within Rstudio using `r substr(R.Version()$version.string,1,15)`, knitr, pandoc, and Miktex (for Latex) for producing the associated PDF or Word Document output. The analysis uses the R packages ggplot2, reshape, gridExtra. To update the results the markdown file needs to be loaded in Rstudio or run using the tools separately. ---> 
 
@@ -100,7 +100,7 @@ $$N(y) = N(0)\pi^y,$$.
 
 #### Clinical characteristics
 
-The main aim of this analysis is to investigate the impact on HIV transmission of providing all medicare ineligible people in ATRAS with ART. For the calculations we simply consider the proportion of the population taking ART and the proportion of those on ART with viral suppression. Both of these inputs can change over time based on the ATRAS data. We do not consider different proportions for each population group. The most recent data value is used for projections beyond the years of vailable data. 
+The main aim of this analysis is to investigate the impact on HIV transmission of providing all medicare ineligible people in ATRAS with ART. For the calculations we simply consider the proportion of the population taking ART and the proportion of those on ART with viral suppression. Both of these inputs can change over time based on the ATRAS data. We do not consider different proportions for each population group. The most recent data value is used for projections beyond the years of available data. 
 
 #### HIV transmission to partners
 
@@ -120,7 +120,7 @@ Key assumptions:
 
 #### Costs associated with ART provision
 
-Our analysis includes an estimate of the annual cost of providing ART, care and support to Medicare ineligibles and their partners who become infected. We obtained estimates of the costs of providing treatment and care to Medicare ineligibles using previous work for Australian settings [@schneider2014cost]. For sexual partners of Medicare ineligibles we estimate the 'lifetime' cost of providing care and treatment using estimates from the the UNited States [@schackman2006lifetime] (which were the only estimates available). By summing all costs associated with providing ART to Medicare ineligibles and the average lifetime cost of providing care and support to PLHIV for their infected partners, we estimate the cost per infection averted. 
+Our analysis includes an estimate of the annual cost of providing ART, care and support to Medicare ineligibles and their partners who become infected. We obtained estimates of the costs of providing treatment and care to Medicare ineligibles using previous work for Australian settings [@schneider2014cost]. For sexual partners of Medicare ineligibles we estimate the 'lifetime' cost of providing care and treatment using estimates from the the United States [@schackman2006lifetime] (which were the only estimates available). 
 
 #### Parameter table
 Table 1 lists all input parameters and their values and ranges.
@@ -196,8 +196,7 @@ if (!loadVars && !loadResults){
 ```
 
 
-**Table 1** - Calculation input parameter ranges. Justifications for these parameter ranges are provided in the endnote
-justifications. Samples are taken from these ranges assumning a uniform distribution. 
+**Table 1** - Calculation input parameter ranges. Justifications for these parameter ranges are provided in endnotes. The simulations used for the calculations take samples from these ranges assuming a uniform distribution. 
 
 Parameter  | Description                | Range                                        | Endnote justification
 -----------|----------------------------|----------------------------------------------|----------------------
@@ -329,8 +328,8 @@ as ineffective treatment (resulting in unsuppressed virus) has the same transmis
 $$\beta''_x = (1-\theta\psi\epsilon_{ART})\beta'_x = a_x(1-p^c_x\epsilon_x)(1-\theta\psi\epsilon_{ART})\beta_x.$$ 
 
 Using this probability we can the number of new infections each year $I_x$ is given by a binomial distribution
-$$I_x \~ binom(Np_x,\beta''_x).$$ 
-For large N and $$\beta''_x$$ this is approximately equal to 
+$$I_x \sim binom(Np_x,\beta''_x).$$ 
+For large N and $\beta''_x$ this is approximately equal to 
 $$I_x = Np_x\beta''_x = Np_xa_x(1-p^c_x\epsilon_x)(1-\theta\psi\epsilon_{ART})\beta_x,$$ 
 and the number of new infections is given by a risk equation. <!--- In the Rmarkdown script there is an option to use the risk equation approach instead of the sampling from a binomial disytribution ---> Given the relatively small population size and the high levels of ART coverage and viral suppression, likely resulting in a small  number so infections, we use the stochastic approach in this anaylsis. 
 
@@ -338,8 +337,8 @@ Adding all the population terms together gives the overall number of new infecti
 $$\Sigma = \sum_{y = 1}^{years} I(y).$$
 
 The total cost of providing ART and healthcare to Medicare ineligibles is then given by
-$$\sum_{y = 1}^{years} (N(y)(c_{care} + \theta c_{ART})\right$$
-and the future costs of providing care and tretament to newly infected partners of Medicare ineligibles is
+$$\sum_{y = 1}^{years} (N(y)(c_{care} + \theta c_{ART})$$
+and the future costs of providing care and treatment to newly infected partners of Medicare ineligibles is
 $\Sigma c_{life}$.
 
 #### Simulations
@@ -538,7 +537,7 @@ iqrtotcost <- IQR(costsSum$totalcost[costsSum$scenario == "costatras"] + costsSu
 
 ```
 
-At enrolment the incidence in partners of Medicare ineligible people is `r median(startinfects)` (IQR:`r median(startinfects)-IQR(startinfects)/2` - `r median(startinfects)+IQR(startinfects)/2`). AS a percentage of the infected this number of new infections equates to `r round(100*median(startinfects)/median(popsizemat[,1]),1)`% of the population (Figure 1). In comparison in 2013 there was an estimated 26,640 PLHIV in Australia overall (with 9.4% unidagnosed) and an estimated 912 new infections [@JAmesPaper]. This equates to `r round(100*912/26640,1)`% rate of new infections per population living with HIV. According to recent estimates of the HIV treatment and cascade 17,661 PLHIV received ART in 2013 (approximatley 66% of the overall number of PLHIV) with 93% having an undetectable viral load [@DavidCascade]. Nationally this means 62% of the overall population of PLHIV have viral suppression (compared to 43% of the ATRAS cohort at enrolement). Using the national estimates for viral suppression we obtain an incidence rate 6.6% per population of Medicare ineligbles. 
+At the time of enrolment for ATRAS the incidence in partners of Medicare ineligible people is `r median(startinfects)` (IQR:`r median(startinfects)-IQR(startinfects)/2` - `r median(startinfects)+IQR(startinfects)/2`). AS a percentage of the infected this number of new infections equates to `r round(100*median(startinfects)/median(popsizemat[,1]),1)`% of the population (Figure 1). In comparison in 2013 there was an estimated 26,640 PLHIV in Australia overall (with 9.4% unidagnosed) and an estimated 912 new infections [@jamespaper]. This equates to `r round(100*912/26640,1)`% rate of new infections per population living with HIV. According to recent estimates of the HIV treatment and cascade 17,661 PLHIV received ART in 2013 (approximatley 66% of the overall number of PLHIV) with 93% having an undetectable viral load [@jwilsoncascade]. Nationally this means 62% of the overall population of PLHIV have viral suppression (compared to 43% of the ATRAS cohort at enrolement). Using the national estimates for viral suppression we obtain an incidence rate 6.6% per population of Medicare ineligbles. 
 
 The impact of expanding ATRAS to all Medicare ineligbiles and acheiving almost universal viral suppression is to reduce annual new infections to 
 `r median(endinfects)` (IQR:`r median(endinfects)-IQR(endinfects)/2` - `r median(endinfects)+IQR(endinfects)/2`) after 5 years (Figure 1).  Corresponding to `r round(100*median(endinfects)/median(popsizemat[,5]),)`% of the Medicare ineligible population. 
@@ -605,7 +604,7 @@ if (savePlots){dev.print(pdf,file=paste(outputFolder, "/figures/", currTime, " R
 
 ```
 
-**Figure 1** - Annual new infections in partners of Medicare ineligibles for each simulation. The grey lines represent the baseline simulations while the blue lines are fro the expansion of ART to all Medicare ineligibles. The black and dark blue lines show the median number of new infections for the Baseline and expanded ATRAS simulations respectively.   
+**Figure 1** - Annual new infections in partners of Medicare ineligibles for each simulation. The grey lines represent the baseline simulations while the blue lines are for the expansion of ART to all Medicare ineligibles. The black and dark blue lines show the median number of new infections for the Baseline and expanded ATRAS simulations respectively.   
 
 ```{r insertyplots1, echo=FALSE, messages = FALSE, warning = FALSE, fig.width=4, fig.height=3}
 if(knitplots){print(simsplot)}
