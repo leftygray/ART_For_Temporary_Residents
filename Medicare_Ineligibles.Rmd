@@ -10,7 +10,7 @@ bibliography: docs/medicare_ineligibles.bib
 csl: docs/plos.csl
 ---
 
-This document summarises a simple analysis to calculate the impact of providing anti-retroviral therapy (ART) to people living with HIV (PLHIV) in Australia who are medicare ineligible. This analysis uses data from the Australian HIV Observational Database Temporary Residents Access Study (ATRAS) [@petoumenos2013australian].The R code for these calculations is available in the associated Rmarkdown file. The aim of these calculations is to estimate the number of new HIV infections that occur through transmission from Medicare ineligible people to their sexual partners, the cost of providing ART to the Medicare ineligible population, and the potential future cost of providing care and treatment to partners of Medicare ineligibles who become infected. 
+This document summarises a simple analysis to calculate the impact of providing anti-retroviral therapy (ART) to people living with HIV (PLHIV) in Australia who are medicare ineligible. This analysis uses data from the Australian HIV Observational Database Temporary Residents Access Study (ATRAS) [@petoumenos2013australian].The R code for these calculations is available in the associated Rmarkdown file. The aim of these calculations is to estimate the number of new HIV infections that occur through transmission from Medicare ineligible people to their sexual partners, the cost of providing ART to the Medicare ineligible population, and the potential future cost of providing treatment to partners of Medicare ineligibles who become infected. <!--- This is version v2.0 of the calculations and document. Previous versions are available in a corresponding git repository --->
 
 This document is written in dynamic format using R markdown v2 within R studio 0.98.1056 (using R version 3.1.2). Plots are created using the package ggplot2. Further details are available in the associated R markdown file which also contains the R code to produce all the results when the markdown is run. Code blocks have been supressed in the output document. <!--- The document was currently produced using R markdown v2 within Rstudio using `r substr(R.Version()$version.string,1,15)`, knitr, pandoc, and Miktex (for Latex) for producing the associated PDF or Word Document output. The analysis uses the R packages ggplot2, reshape, gridExtra. To update the results the markdown file needs to be loaded in Rstudio or run using the tools separately. ---> 
 
@@ -106,19 +106,22 @@ The main aim of this analysis is to investigate the impact on HIV transmission o
 
 HIV transmission occurs through sexual intercourse between medicare ineligibles and their sexual partners. We assume initiating ART does not change sexual behaviour and the number of partnerships, sexual acts per partnership, and the level of condom use is similar to the overall Medicare eligible population in Australia - with behavioural parameters estimated using date from the Second Australian Study of Health and Relationships [@pitts2014introduction]. We also do not consider onward transmission from newly infected partners. As the sexual behaviour for the ART and non-ART population is the same, we use a simple risk equation approach with behavioural parameters set to reflect the overall annual risk of transmission rather than incorporating different partnership types and more complex sexual behaviours. 
 
+
+```{r functions,echo = FALSE, messages = FALSE}
+# Define a function to calculate beta given an incidcence estimate, PLHIV, proportion on ART, and proportion with viral suppression.
+beta <- function(incidence,numInfected,propart,propvs,effart){
+  return(incidence/((1-propart*propvs*effart)*numInfected))
+}
+```
+
 Key assumptions:
 
-* All sexual partners are HIV negative.
-* Homogeneous mixing is assumed which means partnerships are not maintained from year to year. <!--- Big assumption but pretty much assumed forevery risk equation/ode model --->
-* HIV transmission only occurs through sexual intercourse.
-* There is no difference in sexual behaviour between those on and off ART. Hence, the only factor affecting HIV transmission is ART use and viral suppression.
+* HIV transmission from Medicare ineligibles is the same as for the Australian population overall.
 * Those with unsuppressed virus have the same transmission risk as those not taking ART.
-* Females and males have the same number of partners, sexual acts, and condom use on average.
-* Females and males who are ineligible for Medicare have the same sexual behaviour as males and females in the general heterosexual population in Australia.
-* Behavioural and transmission parameters are assumed constant over time.
-* MSM are exclusively homosexual.
+* Females and heterosexual males have the same risk of transmission.
+* Transmission parameters are assumed constant over time.
 
-The largest assumptions affecting the results are the first two assumptions. We have no data describing the characteristics of partners of people ineligible for Medicare so we are unable to determine the proportion of partners who are HIV-positive or the characteritsics of these partnerships. The effect of these assumptions is too over estimate the annual number of new infections caused by people ineligible for Medicare. To ensure a realistic number of infections we calibrate the sexual behaviour parameters (primarily through the number of sexual acts) so that the number of new infections caused by people ineligible for Medicare as a percentage of the overall number of PLHIV is similar to the estimate for the overall Australian population (~3.9% in 2013 [@jamespaper] and described in detail below). <!--- actually make this a bit higher around 5% to account for the lower ART coverage and level of viral suppression --->    
+REWRITE:(The largest assumptions affecting the results are the first two assumptions. We have no data describing the characteristics of partners of people ineligible for Medicare so we are unable to determine the proportion of partners who are HIV-positive or the characteritsics of these partnerships. The effect of these assumptions is too over estimate the annual number of new infections caused by people ineligible for Medicare. To ensure a realistic number of infections we calibrate the sexual behaviour parameters (primarily through the number of sexual acts) so that the number of new infections caused by people ineligible for Medicare as a percentage of the overall number of PLHIV is similar to the estimate for the overall Australian population (~3.9% in 2013 [@jamespaper] and described in detail below). <!--- actually make this a bit higher around 5% to account for the lower ART coverage and level of viral suppression --->)
 
 #### Costs associated with ART provision
 
@@ -130,16 +133,15 @@ Table 1 lists all input parameters and their values and ranges.
 ```{r inputParameters,echo=FALSE}
 # If not loading from previously created file specifiy inputs
 if (!loadVars && !loadResults){
-  # R code to define parameters for simulations. These are defined as uniform ranges [minimum, best guess, maximum]
+  # R code to define parameters for simulations. These are defined as uniform ranges [minimum, maximum]
   # Next version may read this is from an external file. Samples are randomly obtained from these ranges and put into
-  #matrices to aid vectorised calculations
+  # matrices to aid vectorised calculations
   
   # Demographics
-  popsize <- c(400,450,500);   
-  pop_growth <- c(0.98,1,1.02); # Overall relative change in population size
-  prop_f <- c(0.2,0.25,0.3);   
-  prop_m <- c(0.2,0.23,0.3);   
-  # porportion of GBM prop_g is calculated internally so that the proportions add up to 1.
+  popsize <- c(400,500);   
+  pop_growth <- c(0.98,1.02); # Overall relative change in population size
+  prop_m <- c(0.4,0.6);    # Proportion MSM
+  # Proportion heterosexual is calculated internally so that the proportions add up to 1.
    
   # Clinical parameters
   # As these values can change of time we use hardcoded data values from ATRAS to track their change over time. 
@@ -151,44 +153,54 @@ if (!loadVars && !loadResults){
   
   prop_art_factor <- c(0.95, 1.05) # Uncertainty in proportion not on ART so we don't get a proportion greater than 1 
   prop_vs_factor <- c(0.95, 1.05)  # Uncertainty in proportion not on ART so we don't get a proportion greater than 1 
-  
-  # Behavioural paramters
-  # Assumed to remain cosntant over time
-  
-  heteroacts <- 0.6*c(60, 80, 100)     # Number of heterosexual acts per year with partners
-  heterocondom <- c(0.15,0.225,0.3)   # Proportion of heterosexual acts where condoms have been used 
-  gbmacts <- 0.6*c(20,40,60)           # Number of homosexual acts per year with partners
-  gbmcondom <- c(0.5, 0.575, 0.65)    # Proportion of homosexual acts where condoms have been used
+
   
   # HIV transmission parameters
   # Assumed to remain constant over time
   
-  betaf <- c(0.0001, 0.0004, 0.0014)  # Female to male per unprotected act transmission probability
-  betam <- c(0.0006, 0.0008,0.0011)  # Male to female per unprotected act transmission probability
-  betag <- c(0.01, 0.014,0.019)       # GBM male to male per unprotected act transmission probability
+  # First off we calculate a beta transmission value using inputs from the overall Australian population. Estimates are from James's
+  # back projection paper and David's treatment cascade calculations
+  numPLHIV <- 26640      # James's backprojection paper
+  numInfects <- 912      # James's backprojection paper
+  propMSM <- 0.77        # ASR
+  propMSMart <- 0.78     # Gay periodic surveys across Australia
+  propMSMvs <- 0.9       # Gay periodic surveys across Australia
+  propOtehrart <- 0.55   # David's HIV cascade calculations based on prospection data
+  propOthervs <- 0.9     # Assumed same for Gay periodics in line with AHOD data
+  effart <- 0.95 # Efficay of ART for calculations (midway between epsilon_art we use for other calculations)
   
-  epsilon_condom <- c(0.8, 0.95, 0.975) # Efficacy of condoms
-  epsilon_art <- c(0.9, 0.95, 0.99)   # Reduction in HIV infectiouness due to viral suppression
+  betah <- beta(numINfects*(1-propMSM),numPLHIV*(1-propMSM),propOtherart,propOthervs,effart)
+  betahRange <- c(0.75*betah,1.25*betah)
+  betam <- beta(numINfects*propMSM,numPLHIV*propMSM,propMSMart,propMSMvs,effart)
+  betamRange <- c(0.75*betam,1.25*betam)
   
-  # Healthcare and ART costs
+  # Reduction in HIV infectiouness due to viral suppression
+  epsilon_art <- c(0.9,0.99)   
   
-  # ATRAS CD4 data at baseline
-  base350 <- 0.439   # Proportion with CD4 greater than 350 at baseline
-  base200350<- 0.294 # Proportion with CD4 between 200 and 350 at baseline  
-  base200 <- 0.167   # Proportion with CD4 less than 200 at baseline
-  baseMissing <- 0.1 # Proportion with missing CD4 at baseline. Used to normalise basline CD4 values 
+  # ART costs 
   
-  # Annual medical costs by CD4 count
-  careCost350 <- 4000     # Combiination of cost for CD4 > 500 and CD4 between 350 and 500.
-  careCost200350 <- 4800  # Medical costs for CD4 between 200 and 350
-  careCost200 <- 7900     # Medical costs for CD4 < 200
+  artcost <- c(7000,15000) # For Medicare ineligibles. Assumed everyone is on first line ART
   
-  # Weighted average care cost
-  careCostBase <- careCost350*base350/(1-baseMissing) + careCost200350*base200350/(1-baseMissing) + careCost200*base200/(1-baseMissing)
+  # Calculation of lifetime cost of providing ART to those who become infected
   
-  carecost <- c(0.75*careCostBase, careCostBase, 1.25*careCostBase)  # Assumed +/- 25% range
-  artcost <- c(7000,11000,15000)                # Assumed everyone is on first line ART
-  lifecost <- c(0.75*620000,620000,1.25*620000) # Undicsounted lifetime cost of providing care and ART 
+  # Average time of spending in each ART class assuming ~40 years of treatment from James's paper (median results)
+  yearsFirst <- 8.4
+  yearsSecond <- 13.6
+  yearsThird <- 2.5
+  yearsFourth <- 15 #Assume 40 years of ART use until death as the median age of ATRAS cohort is ~35
+  
+  # From Karen's Prep paper
+  costFirst <- 10685
+  costSecond <- 19364
+  costThird <- 31411
+  costFourh <- 28162
+  
+  # Weighted total cost for lifetime of treatment
+  lifecost <- yearsFirst*costFirst + yearsSecond*costSecond + yearsThird*costThird + yearsFourth*costFourth
+  lifecostRange <- c(0.75*lifeCost,1.25*lifeCost) # Undiscounted lifetime cost of ART 
+  
+  # Discounting rate
+  discRate <- 0.05 # Discounting rate
   
   # Save all the internal variables and parameter values 
   if (saveVars || saveResults){
@@ -338,8 +350,6 @@ To perform this analysis, we generated `r numsims` input parameter sets by sampl
 # Define two functions to calculate the incidence for a population. The second function can either be stocastic or deterministic
 infect_prob <- function(acts,propcondom,effcondom,propart,propvs,effart,beta){
   return(acts*(1-propcondom*effcondom)*(1-propart*propvs*effart)*beta)
-#   return((1-(1-(1-effcondom)*beta)^(acts*propcondom)*(1-beta)*(acts*(1-propcondom))*(1-propart*propvs*effart)))
-#    return((1-(1-(1-propcondom*effcondom)*beta)^acts)*(1-propart*propvs*effart))
 }
 
 popinfects <- function(popsize,prob,stochastic = FALSE){
