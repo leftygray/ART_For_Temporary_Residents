@@ -141,7 +141,7 @@ if (!loadVars && !loadResults){
   popsize <- c(400,500);   
   pop_growth <- c(0.98,1.02); # Overall relative change in population size
   prop_m <- c(0.4,0.6);    # Proportion MSM
-  # Proportion heterosexual is calculated internally so that the proportions add up to 1.
+  # Proportion non-MSM is calculated internally so that the proportions add up to 1.
    
   # Clinical parameters
   # As these values can change of time we use hardcoded data values from ATRAS to track their change over time. 
@@ -188,19 +188,24 @@ if (!loadVars && !loadResults){
   yearsSecond <- 13.6
   yearsThird <- 2.5
   yearsFourth <- 15 #Assume 40 years of ART use until death as the median age of ATRAS cohort is ~35
+  totalLifeYears <- yearsFirst+yearsSecond+yearsThird+yearsFourth
   
-  # From Karen's Prep paper
+  # From Karen's Prep paper. Cost is Australian dollars
   costFirst <- 10685
   costSecond <- 19364
   costThird <- 31411
   costFourh <- 28162
+  costUncertainty <- 0.25
   
-  # Weighted total cost for lifetime of treatment
+  # Weighted total cost for lifetime of treatment no discounting
   lifecost <- yearsFirst*costFirst + yearsSecond*costSecond + yearsThird*costThird + yearsFourth*costFourth
-  lifecostRange <- c(0.75*lifeCost,1.25*lifeCost) # Undiscounted lifetime cost of ART 
+  lifecostRange <- c((1-costUncertainty)*lifeCost,(1+costUncertainty)*lifeCost) # Undiscounted lifetime cost of ART 
   
   # Discounting rate
   discRate <- 0.05 # Discounting rate
+  
+  # Weighted total cost for lifetime treatment with discounting. More complicated equation as it depends on the year so is defined below
+  
   
   # Save all the internal variables and parameter values 
   if (saveVars || saveResults){
@@ -215,47 +220,32 @@ if (!loadVars && !loadResults){
 Parameter  | Description                | Range                                        | Reference
 -----------|----------------------------|----------------------------------------------|----------------------
 **Demographic parameters** | | |    
-$N(0)$   | Overall population size in initial year (2014) |  [`r popsize[1]` - `r popsize[3]`] | 1        
-$\pi$ | Multiplicative change in annual population | [`r pop_growth[1]` - `r pop_growth[3]`]/yr | 1            
-$p_f$ | Proportion of Medicare-ineligible population of PLHIV who are female | [`r prop_f[1]` - `r prop_f[3]`] | 1
-$p_m$ | Proportion of Medicare-ineligible population of PLHIV who are heterosexual male |  [`r prop_m[1]` - `r prop_m[3]`] | 1  
-$p_g$ | Proprtion of Medicare-ineligible population of PLHIV who are MSM | Given by $1-p_f-p_m$ | 1  
+$N(0)$   | Overall population size in initial year (2014) |  [`r popsize[1]` - `r popsize[2]`] | 1        
+$\pi$ | Multiplicative change in annual population | [`r pop_growth[1]` - `r pop_growth[2]`]/yr | 1            
+$p_n$ | Proportion of Medicare-ineligible population of PLHIV who are MSM| [`r prop_n[1]` - `r prop_n[2]`] | 1
+$p_m$ | Proportion of Medicare-ineligible population of PLHIV who are non-MSM | Given by $1-p_m$ | 1  
 **Clinical parameters** | | | 
 $\theta$ | Proportion of population taking ART | 63% at enrolment and 95% after 12 months $\pm$ 5%| 2  
 $\psi$ | Proportion of population taking ART with undetectable viral load | 70% at enrolement, 88% after 12 months, and 96% after 24 months $\pm$ 5% | 2  
-**HIV behavioural parameters** | | | 
-$a_h$ | Annual number of heterosexual acts between females and males| [`r heteroacts[1]` - `r heteroacts[3]`] | 3  
-$p^c_h$ | Proportion of heterosexual acts protected with a condom |  [`r heterocondom[1]` - `r heterocondom[3]`] | 4  
-$a_g$ | Annual number of sexual acts with other GBM |  [`r gbmacts[1]` - `r gbmacts[3]`]| 5  
-$p^c_g$ | Proportion of GBM acts protected with a condom |  [`r gbmcondom[1]` - `r gbmcondom[3]`]| 6  
 **HIV transmission paramaters** | | | 
-$\beta_f$ | Per act transmission probability from females to males |  [`r betaf[1]` - `r betaf[3]`]| 7  
-$\beta_m$ | Per act transmission probability from males to females |  [`r betam[1]` - `r betam[3]`]| 7  
-$\beta_g$ | Per act transmission probability between GBM |  [`r betag[1]` - `r betag[3]`]| 7  
-$\epsilon_c$ | Efficacy of condoms |  [`r epsilon_condom[1]` - `r epsilon_condom[3]`]| 8  
-$\epsilon_{ART}$ | Efficacy of ART in preventing HIV transmission if virus is suppressed | [`r epsilon_art[1]` - `r epsilon_art[3]`]| 9  
+$\beta_n$ | Per act transmission probability from females to males |  [`r betan[1]` - `r betan[2]`]| 3  
+$\beta_m$ | Per act transmission probability from males to females |  [`r betam[1]` - `r betam[2]`]| 3  
+$\epsilon_{ART}$ | Efficacy of ART in preventing HIV transmission if virus is suppressed | [`r epsilon_art[1]` - `r epsilon_art[2]`]| 4 
 **Healthcare costs** | | | 
-$c_{care}$ | Average annual healthcare for cost for PLHIV | [\$`r formatC(carecost[1],format="d",big.mark=',')` - \$`r formatC(carecost[3],format="d",big.mark=',')`] | 10  
-$c_{ART}$ | Avergae annual cost of providing ART | [\$`r formatC(artcost[1],format="d",big.mark=',')` - \$`r formatC(artcost[3],format="d",big.mark=',')`] | 11  
-$c_{life}$ | Average lifetime cost of providing healthcare (including ART) post infection | [\$`r formatC(lifecost[1],format="d",big.mark=',')` - \$`r formatC(lifecost[3],format="d",big.mark=',')`] | 12  
+$c_{ART}$ | Avergae annual cost of providing ART | [\$`r formatC(artcost[1],format="d",big.mark=',')` - \$`r formatC(artcost[2],format="d",big.mark=',')`] | 5
+$c_{life}$ | Average lifetime cost of providing ART post infection (undiscounted) | [\$`r formatC(lifecost[1],format="d",big.mark=',')` - \$`r formatC(lifecost[2],format="d",big.mark=',')`] | 6
+$r_{disc}$ | Dsicounting rate | `r 100*discRate`% | 7
 
 
 1. The 2013 ATRAS report <!--- data for 2011-12 when ATRAS started. Up to 460 in 2014 ---> estimates there are 450 Medicare ineligible PLHIV in Australia [@petoumenos2013australian]. We assume a range in the population between 400 and 500 PLHIV with the potential for only a small change in population size over time. In the population of 180 at enrolment there were 47 females and 133 males in the cohort with 89 of the males attributing their HIV infection to MSM exposure [@petoumenos2013australian]. Assuming the same demographic distribution over time, we assume 20-30% of the population is female, another 20-30% of the population are male heterosexuals with the remainder GBM.  
 2. At enrolment 62.8% of ATRAS patients were already receiving ART with 71.8% having undetectable viral load [@petoumenos2013australian]. After  enrolment all patients were put onto ART resulting in 87% having undetectable viral load at 12 months and 96% having undetectable viral load at 24 months [@petoumenos2013australian]. Based on the ATRAS data we assume the percenatge of Medicare ineligibles on ART increases from 70% to 95% with a range of $\pm$ 5% with the proportion with undetecvtable virus increasing from 70% to 96% over two years with a range of $\pm$ 5%.   
-3. The Second Australian Study of Health and Relationships reported heterosexual men had an average of 1.4 partners in the previous year (95% CI: 1.3-1.4; median 1) and heterosexual women had an average of 0.98 partners in the previous year (95% CI: 0.95-1; median 1) [@rissel2014heterosexual]. Seventy four percent of all respondents were in a regular partnership (equal to 89% of those sexually active). On average those in a regular pertnership had vaginal intercourse 1.42 times per week (95% CI: 1.34-1.50). This gives a range of 0.95 x 0.9 x 1.34 x 52 = 59.6 to 1.4 x 0.9 x 1.5 x 52 = 98.3 heterosexual acts per year. Based on this data and calculations we assume a range of [`r heteroacts[1]` - `r heteroacts[3]`] acts per year.   
-4. The Second Australian Study of Health and Relationships reported 25.5% and 21.1% of men and women respectively used a condom during most recent sexual encounter involving vaginal sex [@de2014safer]. Based on this data we assume a range of 
-[`r 100*heterocondom[1]` - `r 100*heterocondom[3]`]%.   
-5. The Second Australian Study of Health and Relationships reported homosexual men had an average of 6.8 partners in the previous year (95% CI: 5.1-8.5; median 3). Twenty eight percent of homosexual men were in a regular homosexual relationship which we assume involves 1-2 acts of anal intercourse per week with the remaining partnerships being casual with 1-2 acts of anal intercourse per partnership. In terms of sexual acts this data suggests an estimate  0.28 x 2 x 52 = 30 regular acts per year and 6.5 x 2 = 13 casual acts per year - assuming 2 acts of anal intercourse per week for regular partnerships and 2 acts of anal intercourse per casual partner. Based on this data and calculations we assume a range of  [`r gbmacts[1]` - `r gbmacts[3]`].
-6.  The Second Australian Study of Health and Relationships reported 56.7% and 58.9% men engaging in homosexual behaviour used a condom when they last engaged in insertive and receptive anal sex, respectively. Based on this data we assume a range of [`r 100*gbmcondom[1]` - `r 100*gbmcondom[3]`]%.    
-7. The estimated range for the probaility of HIV transmission through penile-vaginal and anal intercourse are based on systematic reviews and meta-analysis of pooled estimates of female-to-male and male-to-female vaginal transmission and for receptive and insertive anal intercourse [@Boily2009a; @patel2014estimating; @Jin2010].  
-8. This is the per-act reduction in transmission when a condom is used correctly during intercourse. The range we use is based on the results of numerous reviews [@Pinkerton1997; @Weller2002; @holmes2004effectiveness] and accounts for the small risk of slippage and breakage[@Reece2008].   
-9. We assume those with viral suppression have a 96% reduction in transmission to their sexual partners in line with the results from the HPTN-052 trial for those with detectable drug [@cohen2011prevention].         
-10. In a recent paper evaluating the cost effectiveness of PrEP interventions in Australia, Scheider et. al. [@schneider2014cost] provide estimates with ranges of annual medical costs for PLHIV based on their CD4 count: Medical at CD4 $\geq$ 500 cells/$\mu$L, \$3,097 
-(\$1,274-\$7,642); Medical at CD4 350-499 cells/$\mu$L, \$4,402 (\$1,473-\$11,672); Medical at CD4 200-349 cells/$\mu$L, \$4,762 (\$1,833-\$12,032); and Medical at CD4 $<$ 200 cells/$\mu$ L, \$7,883(\$2,465-\$42,400). The baseline ATRAS data provides the proportion of patients in each CD4 category: percentage CD4 $\geq$ 350 cells/$\mu$L, 43.9%; percentage CD4 between 200 and 350 cells/$\mu$L, 29.4%; and percentage CD4 $<$ 200cells/$\mu$L, 16.7% (with 10% missing). Based on these cost estimates and the ATRAS data (adjusted for missing values) we use an annual medical cost estimate = \$`r careCost350` x `r base350`/(1-`r baseMissing`) + \$`r careCost200350` x `r base200350`/(1-`r baseMissing`) + \$`r careCost200` x \$`r base200`/(1- `r baseMissing`) which gives  a value of \$`r careCostBase`.  We assume a range of $\pm$ 25%.      
+3. Beta CALCULATIONS
 
-11.At enrolement 83% of the ATRAS cohort on ART were taking Tenofovir/Emtrcitabine (Truvada) as the 'backbone' of their regime. This means the vast majority of those on treatment are taking first-line drugs. For this analysis we assume all patients are on and remain on first-line ART over the period of analysis. From Scheider et. al. the average annual cost of first-line drugs is $10,685 ($6,945-$14,424) [@schneider2014cost]. Using this value we assume a range in the annual ART cost of \$`r artcost[1]-artcost[3]`. Note Scheider et. al. estimate annual drug costs for third and higher lines of ART to be greater than $28,000 per year. <!--- may need revision ASR suggests \$16,000 per patient --->
-12. <!--- need to update with Australian data ---> If a partner of a Medicare ineligible becomes infected with HIV then they will require care and eventually treatment while they are living in Australia. As we are not tracking their infection progression in this analysis we use an estimate for the lifetime cost of providing care and treatment. We found no data specifically for Australia, however, Schackman et al estimated the lifetime cost of HIV care in the United States in 2006 at \$618,900 USD (undiscounted) for adults who initiate ART with CD4 $<$ 350 cells/$\mu$ L with a life expectancy of 24.2 years [@schackman2006lifetime]. While pharmaceuticals are priced at a premium compared to Australia, this cost equates to \$25,000 (undiscounted) per year of living with HIV which is comparable to the costs presented in endnote 11. For this analysis we use a value of \$620,000 for the lifetime cost of caring and treating someone who becomes infected with HIV and assume a range of $\pm$ 25%.
+4. We assume those with viral suppression have a 96% reduction in transmission to their sexual partners in line with the results from the HPTN-052 trial for those with detectable drug [@cohen2011prevention].           
 
+5.At enrolement 83% of the ATRAS cohort on ART were taking Tenofovir/Emtrcitabine (Truvada) as the 'backbone' of their regime. This means the vast majority of those on treatment are taking first-line drugs. For this analysis we assume all patients are on and remain on first-line ART over the period of analysis. From Scheider et. al. the average annual cost of first-line drugs is $10,685 ($6,945-$14,424) [@schneider2014cost]. Using this value we assume a range in the annual ART cost of \$`r artcost[1]-artcost[3]`. Note Scheider et. al. estimate annual drug costs for third and higher lines of ART to be greater than $28,000 per year. <!--- may need revision ASR suggests \$16,000 per patient --->
+6. <!--- need to update with Australian data ---> If a partner of a Medicare ineligible becomes infected with HIV then they will require care and eventually treatment while they are living in Australia. As we are not tracking their infection progression in this analysis we use an estimate for the lifetime cost of providing care and treatment. We found no data specifically for Australia, however, Schackman et al estimated the lifetime cost of HIV care in the United States in 2006 at \$618,900 USD (undiscounted) for adults who initiate ART with CD4 $<$ 350 cells/$\mu$ L with a life expectancy of 24.2 years [@schackman2006lifetime]. While pharmaceuticals are priced at a premium compared to Australia, this cost equates to \$25,000 (undiscounted) per year of living with HIV which is comparable to the costs presented in endnote 11. For this analysis we use a value of \$620,000 for the lifetime cost of caring and treating someone who becomes infected with HIV and assume a range of $\pm$ 25%.
+6. DISCOUNTING calculations
 
 ```{r vectoriseParams, echo = FALSE,  messages = FALSE}
 
@@ -276,8 +266,8 @@ $c_{life}$ | Average lifetime cost of providing healthcare (including ART) post 
     popsizemat[ii,] <- runif(1,popsize[1],popsize[2]) * runif(1,pop_growth[1],pop_growth[2])^c(1:runyears)
   }
   
-  prop_fvec <- runif(numsims,prop_f[1],prop_f[3])
-  prop_mvec <- runif(numsims,prop_m[1],prop_m[3])
+  prop_nvec <- runif(numsims,prop_n[1],prop_n[2])
+  prop_mvec <- runif(numsims,prop_m[1],prop_m[2])
   
   # Clinical parameters (matrices). This is done by first converting proportions on ART and with viral suppression to vectors of 
   # equal length to number of simulation years and then inverting twice so the uncertianty factor does not produce a value great than 1. 
@@ -303,24 +293,16 @@ $c_{life}$ | Average lifetime cost of providing healthcare (including ART) post 
     prop_vs_basemat[ii,] <- 1-tempFactor_vs * (1-prop_vs_baseVec)
   }
   
-  # Behavioural paramaters (vectors)
-  heteroactsvec <- runif(numsims,heteroacts[1],heteroacts[3])
-  heterocondomvec <- runif(numsims,heterocondom[1],heterocondom[3])
-  gbmactsvec <- runif(numsims,gbmacts[1],gbmacts[3])
-  gbmcondomvec <- runif(numsims,gbmcondom[1],gbmcondom[3])
-  
   # Transmission parameters (vectors)
-  betafvec <- runif(numsims,betaf[1],betaf[3])
-  betamvec <- runif(numsims,betam[1],betam[3])
-  betagvec <- runif(numsims,betag[1],betag[3])
-  
-  epsilon_condomvec <- runif(numsims,epsilon_condom[1],epsilon_condom[3])
+  betanvec <- runif(numsims,betaf[1],betaf[2])
+  betamvec <- runif(numsims,betam[1],betam[2])
+
   epsilon_artvec <- runif(numsims,epsilon_art[1],epsilon_art[3])
   
   # Cost parameters
-  costcarevec <- runif(numsims,carecost[1],carecost[3])
-  costartvec <-  runif(numsims,artcost[1],artcost[3])
-  costlifevec <- runif(numsims,lifecost[1],lifecost[3])
+  costartvec <-  runif(numsims,artcost[1],artcost[2])
+  costlifevec <- runif(numsims,lifecost[1],lifecost[2])
+  costUncertainvec <- runif(numsims,1-costUncertainty,1+costUncertainty)
 
 # } else {
 #   # Load previously generated results
@@ -340,7 +322,9 @@ Using this probability the number of new infections caused by Medicare-ineligibl
 
 #### Cost calculations
 
-The total cost of providing ART to people ineligible for Medicare ineligibles is calculated by mutliplying the annual number of people ineligible for Medicare infected with HIV by the annual cost of providing ART and summing over the period of analysis. For sexual partners of Medicare-ineligibles who become infected with HIV we calculate the overall future lifetime cost of providing care and treatment to these people by multiplying the cumulative number of people wjo acquire infection by the lifetime cost reported in Table 1.
+The total cost of providing ART to people ineligible for Medicare ineligibles is calculated by mutliplying the annual number of people ineligible for Medicare infected with HIV by the annual cost of providing ART and summing over the period of analysis. For sexual partners of Medicare-ineligibles who become infected with HIV we calculate the overall future lifetime cost of providing care and treatment to these people by multiplying the cumulative number of people who acquire infection by the lifetime cost reported in Table 1.
+
+Discuss discounting.....
 
 #### Simulations
 
@@ -348,8 +332,8 @@ To perform this analysis, we generated `r numsims` input parameter sets by sampl
 
 ```{r functions,echo = FALSE, messages = FALSE}
 # Define two functions to calculate the incidence for a population. The second function can either be stocastic or deterministic
-infect_prob <- function(acts,propcondom,effcondom,propart,propvs,effart,beta){
-  return(acts*(1-propcondom*effcondom)*(1-propart*propvs*effart)*beta)
+infect_prob <- function(propart,propvs,effart,beta){
+  return((1-propart*propvs*effart)*beta)
 }
 
 popinfects <- function(popsize,prob,stochastic = FALSE){
@@ -358,6 +342,9 @@ popinfects <- function(popsize,prob,stochastic = FALSE){
   } else {
     return(rbinom(length(prob),round(popsize),prob))
   }
+  
+# discountCosts <-function()  
+  
   
 }
 ```
