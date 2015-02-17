@@ -183,12 +183,12 @@ if (!loadVars && !loadResults){
   
   # Calculation of lifetime cost of providing ART to those who become infected
   
-  # Average time of spending in each ART class assuming ~40 years of treatment from James's paper (median results)
-  yearsFirst <- 8.4
-  yearsSecond <- 13.6
-  yearsThird <- 2.5
-  yearsFourth <- 15 #Assume 40 years of ART use until death as the median age of ATRAS cohort is ~35
-  totalLifeYears <- yearsFirst+yearsSecond+yearsThird+yearsFourth
+  # Average time of spending in each ART class assuming ~40 years of treatment from James's paper (median results rounded up)
+  yearsFirst <- 9
+  yearsSecond <- 14
+  yearsThird <- 3
+  totalLifeYears <- 40
+  yearsFourth <- totalLifeYears-(yearsFirst+yearsSecond+yearsThird) #Assume 40 years of ART use until death as the median age of ATRAS cohort is ~35
   
   # From Karen's Prep paper. Cost is Australian dollars
   costFirst <- 10685
@@ -200,6 +200,10 @@ if (!loadVars && !loadResults){
   # Weighted total cost for lifetime of treatment no discounting
   lifecost <- yearsFirst*costFirst + yearsSecond*costSecond + yearsThird*costThird + yearsFourth*costFourth
   lifecostRange <- c((1-costUncertainty)*lifecost,(1+costUncertainty)*lifecost) # Undiscounted lifetime cost of ART 
+  
+  lifecostYearly <- rep(1,totalLifeYears)
+  
+  **WHERE I AM UP TO ****
   
   # Discounting rate
   discRate <- 0.05 # Discounting rate
@@ -234,9 +238,8 @@ $\epsilon_{ART}$ | Efficacy of ART in preventing HIV transmission if virus is su
 **Healthcare costs** | | | 
 $c_{ART}$ | Avergae annual cost of providing ART | [\$`r formatC(artcost[1],format="d",big.mark=',')` - \$`r formatC(artcost[2],format="d",big.mark=',')`] | 5
 $c_{life}$ | Average lifetime cost of providing ART post infection (undiscounted) | [\$`r formatC(lifecostRange[1],format="d",big.mark=',')` - \$`r formatC(lifecostRange[2],format="d",big.mark=',')`] | 6
-$r_{disc}$ | Dsicounting rate | `r 100*discRate`% | 7
-
-
+$r_{disc}$ | Dsicounting rate | `r 100*discRate`% | 7   
+   
 1. The 2013 ATRAS report <!--- data for 2011-12 when ATRAS started. Up to 460 in 2014 ---> estimates there are 450 Medicare ineligible PLHIV in Australia [@petoumenos2013australian]. We assume a range in the population between 400 and 500 PLHIV with the potential for only a small change in population size over time. In the population of 180 at enrolment there were 47 females and 133 males in the cohort with 89 of the males attributing their HIV infection to MSM exposure [@petoumenos2013australian]. Assuming the same demographic distribution over time, we assume 20-30% of the population is female, another 20-30% of the population are male heterosexuals with the remainder GBM.  
 2. At enrolment 62.8% of ATRAS patients were already receiving ART with 71.8% having undetectable viral load [@petoumenos2013australian]. After  enrolment all patients were put onto ART resulting in 87% having undetectable viral load at 12 months and 96% having undetectable viral load at 24 months [@petoumenos2013australian]. Based on the ATRAS data we assume the percenatge of Medicare ineligibles on ART increases from 70% to 95% with a range of $\pm$ 5% with the proportion with undetecvtable virus increasing from 70% to 96% over two years with a range of $\pm$ 5%.   
 3. Beta CALCULATIONS
@@ -369,10 +372,14 @@ if (!loadResults){
   infectsm <- matrix(0,numsims*numruns,runyears)
   infectsn <- matrix(0,numsims*numruns,runyears)
   costAtras <- matrix(0,numsims*numruns,runyears)
+  discountAtras <- matrix(0,numsims*numruns,runyears)
   
   # For baseline simulations
   infectsmBase <- matrix(0,numsims*numruns,runyears)
   infectsnBase <- matrix(0,numsims*numruns,runyears)
+  
+  # Discount rate vector
+  discountVec <- 1/(1+discRate)^c(0:(runyears-1)) # No discounting for year zero
   
   # Do the calculations
   for (ii in 1:numsims){
@@ -402,6 +409,9 @@ if (!loadResults){
       
       # Cost of providing ART - undiscounted
       costAtras[vecIndex,] <- popsizemat[ii,]*costartvec[ii]
+      
+      # Cost of providing ART - discounted
+      discountAtras[vecIndex,] <- popsizemat[ii,]*costartvec[ii]*discountVec
     }
   }
 
@@ -417,6 +427,7 @@ if (!loadResults){
     c("simulation","year","infectsbynonmsmbase") 
   
   costAtrasVec <- melt(t(costAtras)); costAtrasVec <- costAtrasVec[c(2,1,3)]; colnames(costAtrasVec) <- c("simulation","year","costatras")
+  discountAtrasVec <- melt(t(discountAtras)); discountAtrasVec <- discountAtrasVec[c(2,1,3)]; colnames(discountAtrasVec) <- c("simulation","year","costatrasDiscounted")
   
   # Merge the results we want into one data frame, order simulations and append parameterset number. Each observation represents a 
   # single calculation of incidence
@@ -433,6 +444,8 @@ if (!loadResults){
   
   # Costs
   newinfections <- merge(newinfections,costAtrasVec,all=TRUE)
+  newinfections <- merge(newinfections,discountAtrasVec,all=TRUE)
+  
   newinfections$lifecostbase <- newinfections$totalinfectsbase * costlifevec
   newinfections$lifecostatras <- newinfections$totalinfects * costlifevec
 
