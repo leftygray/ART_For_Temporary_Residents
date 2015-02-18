@@ -197,16 +197,18 @@ if (!loadVars && !loadResults){
   costFourth <- 28162
   costUncertainty <- 0.25
   
-  # Weighted total cost for lifetime of treatment no discounting
-  lifecost <- yearsFirst*costFirst + yearsSecond*costSecond + yearsThird*costThird + yearsFourth*costFourth
-  lifecostRange <- c((1-costUncertainty)*lifecost,(1+costUncertainty)*lifecost) # Undiscounted lifetime cost of ART 
+  # Total cost for lifetime of treatment no discounting
+  lifecostYearly <- rep(costFourth,totalLifeYears)
+  lifecostYearly[1:yearsFirst] <- costFirst
+  lifecostYearly[(yearsFirst+1):(yearsFirst+yearsSecond)] <- costSecond
+  lifecostYearly[(yearsFirst+yearsSecond+1):(yearsFirst+yearsSecond+yearsThird)] <- costThird
   
-  lifecostYearly <- rep(1,totalLifeYears)
-  
-  **WHERE I AM UP TO ****
+  lifecost <- sum(lifecostYearly)
+  lifecostRange <- c((1-costUncertainty)*lifecost,(1+costUncertainty)*lifecost) # Undiscounted lifetime cost of ART uncertainty
   
   # Discounting rate
-  discRate <- 0.05 # Discounting rate
+  discRate <- 0.05      # Discounting rate
+  timeTreat <- c(0,0)   # Time between infection and treatment where discounting would occur
   
   # Weighted total cost for lifetime treatment with discounting. More complicated equation as it depends on the year so is defined below
   
@@ -252,66 +254,61 @@ $r_{disc}$ | Dsicounting rate | `r 100*discRate`% | 7
 
 ```{r vectoriseParams, echo = FALSE,  messages = FALSE}
 
-# if (!loadResults){
-  # Convert parameters to vectors and matrices for running in the calculations. Constants are stored as vectors and time varying 
-  # parameters are stored as matrices. Each vector element or matrix row represents a specific sampling from the input parmater ranges. 
-  
-  if (useSeed){
-    set.seed(currseed)
-  } else {
-    set.seed(NULL)
-  }
-  
-  # Demograhic parameters - Population size calulated by combining the initial population size and growth rate. As it is time varying 
-  # population size is stored as a matrix
-  popsizemat <- matrix(0,numsims,runyears)
-  for (ii in 1:numsims){
-    popsizemat[ii,] <- runif(1,popsize[1],popsize[2]) * runif(1,pop_growth[1],pop_growth[2])^c(1:runyears)
-  }
-  
-  prop_mvec <- runif(numsims,prop_m[1],prop_m[2])
-  prop_nvec <- 1-prop_mvec
-  
-  # Clinical parameters (matrices). This is done by first converting proportions on ART and with viral suppression to vectors of 
-  # equal length to number of simulation years and then inverting twice so the uncertianty factor does not produce a value great than 1. 
-  # If the number of simulations years is greater than the number of data values the final data value is assumed to remain constant.
-  
-  prop_art_baseVec <- prop_art_base[length(prop_art_base)] * rep(1,runyears)
-  prop_art_baseVec[1:length(prop_art_base)] <- prop_art_base  # Replace start of vector with data values
-  
-  prop_vs_baseVec <- prop_vs_base[length(prop_vs_base)] * rep(1,runyears)
-  prop_vs_baseVec[1:length(prop_vs_base)] <- prop_vs_base  # Replace start of vector with data values
-  
-  
-  # Now create matrix of values by looping over number of simulations
-  prop_art_basemat <- matrix(0,numsims,runyears)
-  prop_vs_basemat <- matrix(0,numsims,runyears)
-  for (ii in 1:numsims) {
-     # Sample from multiplicative factor
-    tempFactor_art <- runif(1,prop_art_factor[1],prop_art_factor[2]) 
-    tempFactor_vs <- runif(1,prop_vs_factor[1],prop_vs_factor[2])
-  #   
-    # Do double inversion and store in the row
-    prop_art_basemat[ii,] <- 1-tempFactor_art * (1-prop_art_baseVec)
-    prop_vs_basemat[ii,] <- 1-tempFactor_vs * (1-prop_vs_baseVec)
-  }
-  
-  # Transmission parameters (vectors)
-  betanvec <- runif(numsims,betanRange[1],betanRange[2])
-  betamvec <- runif(numsims,betamRange[1],betamRange[2])
 
-  epsilon_artvec <- runif(numsims,epsilon_art[1],epsilon_art[2])
-  
-  # Cost parameters
-  costartvec <-  runif(numsims,artcost[1],artcost[2])
-  costlifevec <- runif(numsims,lifecostRange[1],lifecostRange[2])
-  costUncertainvec <- runif(numsims,1-costUncertainty,1+costUncertainty)
+# Convert parameters to vectors and matrices for running in the calculations. Constants are stored as vectors and time varying 
+# parameters are stored as matrices. Each vector element or matrix row represents a specific sampling from the input parmater ranges. 
 
-# } else {
-#   # Load previously generated results
-#   load(paste(loadFileTag," Results.R",sep=""))
-# }
+if (useSeed){
+  set.seed(currseed)
+} else {
+  set.seed(NULL)
+}
 
+# Demograhic parameters - Population size calulated by combining the initial population size and growth rate. As it is time varying 
+# population size is stored as a matrix
+popsizemat <- matrix(0,numsims,runyears)
+for (ii in 1:numsims){
+  popsizemat[ii,] <- runif(1,popsize[1],popsize[2]) * runif(1,pop_growth[1],pop_growth[2])^c(1:runyears)
+}
+
+prop_mvec <- runif(numsims,prop_m[1],prop_m[2])
+prop_nvec <- 1-prop_mvec
+
+# Clinical parameters (matrices). This is done by first converting proportions on ART and with viral suppression to vectors of 
+# equal length to number of simulation years and then inverting twice so the uncertianty factor does not produce a value great than 1. 
+# If the number of simulations years is greater than the number of data values the final data value is assumed to remain constant.
+
+prop_art_baseVec <- prop_art_base[length(prop_art_base)] * rep(1,runyears)
+prop_art_baseVec[1:length(prop_art_base)] <- prop_art_base  # Replace start of vector with data values
+
+prop_vs_baseVec <- prop_vs_base[length(prop_vs_base)] * rep(1,runyears)
+prop_vs_baseVec[1:length(prop_vs_base)] <- prop_vs_base  # Replace start of vector with data values
+
+
+# Now create matrix of values by looping over number of simulations
+prop_art_basemat <- matrix(0,numsims,runyears)
+prop_vs_basemat <- matrix(0,numsims,runyears)
+for (ii in 1:numsims) {
+   # Sample from multiplicative factor
+  tempFactor_art <- runif(1,prop_art_factor[1],prop_art_factor[2]) 
+  tempFactor_vs <- runif(1,prop_vs_factor[1],prop_vs_factor[2])
+#   
+  # Do double inversion and store in the row
+  prop_art_basemat[ii,] <- 1-tempFactor_art * (1-prop_art_baseVec)
+  prop_vs_basemat[ii,] <- 1-tempFactor_vs * (1-prop_vs_baseVec)
+}
+
+# Transmission parameters (vectors)
+betanvec <- runif(numsims,betanRange[1],betanRange[2])
+betamvec <- runif(numsims,betamRange[1],betamRange[2])
+
+epsilon_artvec <- runif(numsims,epsilon_art[1],epsilon_art[2])
+
+# Cost parameters
+costartvec <-  runif(numsims,artcost[1],artcost[2])
+costlifevec <- runif(numsims,lifecostRange[1],lifecostRange[2])
+costUncertainvec <- runif(numsims,1-costUncertainty,1+costUncertainty)
+timeTreatVec <- runif(numsims,timeTreat[1],timeTreat[2])
 
 ````
 
@@ -345,10 +342,18 @@ popinfects <- function(popsize,prob,stochastic = FALSE){
   } else {
     return(rbinom(length(prob),round(popsize),prob))
   }
+}  
+
+discountcosts <-function(yearlyCosts,discRate,startYear,delay){
+  # This function calculates the discounted lifetime costs for someone who becomes infected given
+  # a vector of estimated annual costs for treatment over time (yearlsCosts), the discount rate, the year
+  # since the start simulation when someone becomes infected (to account for discounting before they become infected),
+  # and any delay from infection to starting treatment (to account for discounting before they start treatment).
+  # The function returns the sum of the discounted annual costs
   
-# discountCosts <-function()  
-  
-  
+  discountVec <- 1/(1+discRate)^(c(0:(length(yearlyCosts)-1))+startYear+delay) # No discounting for year zero
+  yearlyDiscountCosts <- yearlyCosts*discountVec
+  return(sum(yearlyDiscountCosts))
 }
 ```
 
@@ -442,12 +447,13 @@ if (!loadResults){
   # Averted infections
   newinfections$infectsaverted <- (newinfections$totalinfectsbase - newinfections$totalinfects)
   
-  # Costs
+  # Undiscounted Costs
   newinfections <- merge(newinfections,costAtrasVec,all=TRUE)
   newinfections <- merge(newinfections,discountAtrasVec,all=TRUE)
   
-  newinfections$lifecostbase <- newinfections$totalinfectsbase * costlifevec
-  newinfections$lifecostatras <- newinfections$totalinfects * costlifevec
+  newinfections$lifecostatras <- newinfections$totalinfects * costlifevec    # Undiscounted
+  newinfections$lifecostbase <- newinfections$totalinfectsbase * costlifevec # Undiscounted
+  
 
   # Order by simulation number
   newinfections <- newinfections[order(newinfections$simulation),]
@@ -458,6 +464,18 @@ if (!loadResults){
   
   # Subtract a year from year column to start things at year zero
   newinfections$year <- newinfections$year - 1
+  
+  # Discounted costs - Need to loop through each line of newinfections to account for the different startyears
+  for (ii in 1:nrow(newinfections)){
+    
+    simCostsDisc <-sum(discountcosts(lifecostYearly*costUncertainvec[newinfections$simulation[ii]], discRate,
+                                                    newinfections$year[ii], timeTreatVec[newinfections$simulation[ii]]))
+    
+    newinfections$lifecostatrasdisc[ii] <- simCostsDisc*newinfections$totalinfects[ii]
+    newinfections$lifecostbasedisc[ii] <- simCostsDisc*newinfections$totalinfectsbase[ii]  
+    
+  }
+  
   
   # Write results to file
   # Save all the internal variables and parameter values 
