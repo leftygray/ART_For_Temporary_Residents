@@ -432,7 +432,7 @@ if (!loadResults){
     c("simulation","year","infectsbynonmsmbase") 
   
   costAtrasVec <- melt(t(costAtras)); costAtrasVec <- costAtrasVec[c(2,1,3)]; colnames(costAtrasVec) <- c("simulation","year","costatras")
-  discountAtrasVec <- melt(t(discountAtras)); discountAtrasVec <- discountAtrasVec[c(2,1,3)]; colnames(discountAtrasVec) <- c("simulation","year","costatrasDiscounted")
+  discountAtrasVec <- melt(t(discountAtras)); discountAtrasVec <- discountAtrasVec[c(2,1,3)]; colnames(discountAtrasVec) <- c("simulation","year","costatrasdisc")
   
   # Merge the results we want into one data frame, order simulations and append parameterset number. Each observation represents a 
   # single calculation of incidence
@@ -503,8 +503,8 @@ infectsSum <- aggregate(newinfections ~ simulation + scenario, data=infects, FUN
 avertedinfects <- melt(newinfections,id.vars=c("year","simulation"),measure.vars=c("infectsaverted"),variable.name="scenario",value.name="totalaverted")
 avertedSum <- aggregate(totalaverted ~ simulation + scenario, data=avertedinfects, FUN=sum)
 
-costs <- melt(newinfections,id.vars=c("year","simulation"),measure.vars=c("costatras","lifecostbase","lifecostatras"),
-              variable.name="scenario",value.name="totalcost")
+costs <- melt(newinfections,id.vars=c("year","simulation"),measure.vars=c("costatras","costatrasdisc","lifecostbase","lifecostatras",
+              "lifecostbasedisc","lifecostatrasdisc"),variable.name="scenario",value.name="totalcost")
 costsSum <- aggregate(totalcost ~ simulation + scenario, data=costs, FUN=sum)
 
 # Basic summary calculations 
@@ -529,6 +529,42 @@ iqrlacost <- IQR(costsSum$totalcost[costsSum$scenario == "lifecostatras"])
 
 medtotcost <- median(costsSum$totalcost[costsSum$scenario == "costatras"] + costsSum$totalcost[costsSum$scenario == "lifecostatras"])
 iqrtotcost <- IQR(costsSum$totalcost[costsSum$scenario == "costatras"] + costsSum$totalcost[costsSum$scenario == "lifecostatras"])
+
+# Cost per infection averted
+medcostpia <- median(costsSum$totalcost[costsSum$scenario == "costatras"]/avertedSum$totalaverted)
+iqrcostpia <- IQR(costsSum$totalcost[costsSum$scenario == "costatras"]/avertedSum$totalaverted)
+
+medcostpiadisc <- median(costsSum$totalcost[costsSum$scenario == "costatrasdisc"]/avertedSum$totalaverted)
+iqrcostpiadisc <- IQR(costsSum$totalcost[costsSum$scenario == "costatrasdisc"]/avertedSum$totalaverted)
+
+# Savings and net costs
+medsaving <- median(costsSum$totalcost[costsSum$scenario == "lifecostbase"] - 
+                      costsSum$totalcost[costsSum$scenario == "lifecostatras"])
+
+iqrsaving <- IQR(costsSum$totalcost[costsSum$scenario == "lifecostbase"] - 
+                   costsSum$totalcost[costsSum$scenario == "lifecostatras"])
+
+medsavingdisc <- median(costsSum$totalcost[costsSum$scenario == "lifecostbasedisc"] - 
+                          costsSum$totalcost[costsSum$scenario == "lifecostatrasdisc"])
+
+iqrsavingdisc <- IQR(costsSum$totalcost[costsSum$scenario == "lifecostbasedisc"] - 
+                       costsSum$totalcost[costsSum$scenario == "lifecostatrasdisc"])
+
+mednetcost<- median(costsSum$totalcost[costsSum$scenario == "costatras"] - 
+                    costsSum$totalcost[costsSum$scenario == "lifecostbase"] + 
+                    costsSum$totalcost[costsSum$scenario == "lifecostatras"])
+
+iqrnetcost <- IQR(costsSum$totalcost[costsSum$scenario == "costatras"] - 
+                  costsSum$totalcost[costsSum$scenario == "lifecostbase"] + 
+                  costsSum$totalcost[costsSum$scenario == "lifecostatras"])
+
+mednetcostdisc <- median(costsSum$totalcost[costsSum$scenario == "costatrasdisc"] - 
+                        costsSum$totalcost[costsSum$scenario == "lifecostbasedisc"] + 
+                        costsSum$totalcost[costsSum$scenario == "lifecostatrasdisc"])
+
+iqrnetcostdisc <- IQR(costsSum$totalcost[costsSum$scenario == "costatrasdisc"] - 
+                     costsSum$totalcost[costsSum$scenario == "lifecostbasedisc"] + 
+                     costsSum$totalcost[costsSum$scenario == "lifecostatrasdisc"])
 
 ```
 
