@@ -104,7 +104,7 @@ The main aim of this analysis is to investigate the impact on HIV transmission o
 
 #### HIV transmission to partners
 
-HIV transmission occurs through sexual intercourse between medicare ineligibles and their sexual partners. We assume initiating ART does not change sexual behaviour and the number of partnerships, sexual acts per partnership, and the level of condom use is similar to the overall Medicare eligible population in Australia - with behavioural parameters estimated using date from the Second Australian Study of Health and Relationships [@pitts2014introduction]. We also do not consider onward transmission from newly infected partners. As the sexual behaviour for the ART and non-ART population is the same, we use a simple risk equation approach with behavioural parameters set to reflect the overall annual risk of transmission rather than incorporating different partnership types and more complex sexual behaviours. 
+HIV transmission occurs through sexual intercourse between medicare ineligibles and their sexual partners. We assume all partners are Medicare eligible and initiating ART does not change the risk of transmission to partners (through changes in behaviour for example). We also do not consider onward transmission from newly infected partners. As the sexual behaviour for the ART and non-ART population is the same, we use a simple risk equation approach with the overall annual risk of transmission calculated from national data rather than incorporating complex sexual behaviour. 
 
 
 ```{r betafunction,echo = FALSE, messages = FALSE}
@@ -116,16 +116,16 @@ beta <- function(incidence,numInfected,propart,propvs,effart){
 
 Key assumptions:
 
-* HIV transmission from Medicare ineligibles is the same as for the Australian population overall.
+* HIV transmission from Medicare ineligibles who are not on ART is the same as for the Australian population of PLHIV not on ART.
+* Partners of HIV positive people who are ineligible for Medicare are assumed to be Medicare eligible.
 * Those with unsuppressed virus have the same transmission risk as those not taking ART.
 * Females and heterosexual males have the same risk of transmission.
 * Transmission parameters are assumed constant over time.
 
-REWRITE:(The largest assumptions affecting the results are the first two assumptions. We have no data describing the characteristics of partners of people ineligible for Medicare so we are unable to determine the proportion of partners who are HIV-positive or the characteritsics of these partnerships. The effect of these assumptions is too over estimate the annual number of new infections caused by people ineligible for Medicare. To ensure a realistic number of infections we calibrate the sexual behaviour parameters (primarily through the number of sexual acts) so that the number of new infections caused by people ineligible for Medicare as a percentage of the overall number of PLHIV is similar to the estimate for the overall Australian population (~3.9% in 2013 [@jamespaper] and described in detail below). <!--- actually make this a bit higher around 5% to account for the lower ART coverage and level of viral suppression --->)
-
 #### Costs associated with ART provision
 
-Our analysis includes an estimate of the annual cost of providing ART, care and support to Medicare ineligibles and their partners who become infected. We obtained estimates of the costs of providing treatment and care to Medicare ineligibles using previous work for Australian settings [@schneider2014cost]. For sexual partners of Medicare ineligibles who become infected with HIV we estimate the 'lifetime' cost of providing care and treatment. <!--- Currently using estimates from US [@schackman2006lifetime] but need to find data for Australia. Maybe add a calculation for cost per infection averted.--->
+Our analysis includes an estimate of the annual cost of providing ART to Medicare ineligibles and their partners who become infected. We obtained estimates of the costs of providing treatment using previous work for Australian settings [@schneider2014cost]. For sexual partners of Medicare ineligibles who become infected with HIV we estimate the 'lifetime' cost of providing care and treatment. 
+
 
 #### Parameter table
 Table 1 lists all input parameters and their values and ranges.
@@ -233,24 +233,25 @@ $p_n$ | Proportion of Medicare-ineligible population of PLHIV who are non-MSM | 
 **Clinical parameters** | | | 
 $\theta$ | Proportion of population taking ART | 63% at enrolment and 95% after 12 months $\pm$ 5%| 2  
 $\psi$ | Proportion of population taking ART with undetectable viral load | 70% at enrolement, 88% after 12 months, and 96% after 24 months $\pm$ 5% | 2  
-**HIV transmission paramaters** | | | 
-$\beta_n$ | Per act transmission probability from females to males |  [`r betan[1]` - `r betan[2]`]| 3  
-$\beta_m$ | Per act transmission probability from males to females |  [`r betam[1]` - `r betam[2]`]| 3  
+**HIV transmission parameters** | | | 
+$\beta_n$ | Annual transmission probability from non-MSM to partners in the absence of ART  |  [`r betan[1]` - `r betan[2]`]| 3  
+$\beta_m$ | Annual transmission probability from MSM to partners in the absence of ART |  [`r betam[1]` - `r betam[2]`]| 3  
 $\epsilon_{ART}$ | Efficacy of ART in preventing HIV transmission if virus is suppressed | [`r epsilon_art[1]` - `r epsilon_art[2]`]| 4 
-**Healthcare costs** | | | 
-$c_{ART}$ | Avergae annual cost of providing ART | [\$`r formatC(artcost[1],format="d",big.mark=',')` - \$`r formatC(artcost[2],format="d",big.mark=',')`] | 5
+**Treatment costs** | | | 
+$c_{ART}$ | Average annual cost of providing ART to Medicare ineligbles | [\$`r formatC(artcost[1],format="d",big.mark=',')` - \$`r formatC(artcost[2],format="d",big.mark=',')`] | 5
 $c_{life}$ | Average lifetime cost of providing ART post infection (undiscounted) | [\$`r formatC(lifecostRange[1],format="d",big.mark=',')` - \$`r formatC(lifecostRange[2],format="d",big.mark=',')`] | 6
-$r_{disc}$ | Dsicounting rate | `r 100*discRate`% | 7   
+$r_{disc}$ | Dsicounting rate | `r 100*discRate`% | 7  
+$t_{ART}$ | Average time between infection and initiating ART | [`r timeTreat[1]` - `r timeTreat[2]`] years | 7
+ 
    
 1. The 2013 ATRAS report <!--- data for 2011-12 when ATRAS started. Up to 460 in 2014 ---> estimates there are 450 Medicare ineligible PLHIV in Australia [@petoumenos2013australian]. We assume a range in the population between 400 and 500 PLHIV with the potential for only a small change in population size over time. In the population of 180 at enrolment there were 47 females and 133 males in the cohort with 89 of the males attributing their HIV infection to MSM exposure [@petoumenos2013australian]. Assuming the same demographic distribution over time, we assume 20-30% of the population is female, another 20-30% of the population are male heterosexuals with the remainder GBM.  
 2. At enrolment 62.8% of ATRAS patients were already receiving ART with 71.8% having undetectable viral load [@petoumenos2013australian]. After  enrolment all patients were put onto ART resulting in 87% having undetectable viral load at 12 months and 96% having undetectable viral load at 24 months [@petoumenos2013australian]. Based on the ATRAS data we assume the percenatge of Medicare ineligibles on ART increases from 70% to 95% with a range of $\pm$ 5% with the proportion with undetecvtable virus increasing from 70% to 96% over two years with a range of $\pm$ 5%.   
-3. Beta CALCULATIONS
-
+3. These values are calculated using data for the overall population of PLHIV in Australia. Using the equation $I = N(1-\theta)\beta + N\theta(1-\psi)\beta + N\theta\psi(1-\epsilon_{ART})\beta = N\beta(1-\theta\psi\epsilon_{ART})$ where $I$ is the overall incidence in Australian MSM and non-MSM, $N$ is the overall number of PLHIV in Australia who are MSM and non-MSM, and the remaining parmaters have the same meaning as in Table 1 we can estimate the value of $\beta$ for MSM and non-MSM. In 2013 there was an estimated 26,640 PLHIV in Australia and there were estimated 912 new infections [@jamespaper] of which around 75% are attributed to homosexual contact (cite ASR). According to recent estimates for the HIV treatment cascade in Australia around 75% of MSM living with HIV (GAY Periodics) and 55% of non-MSM living with HIV are taking ART [@jwilsoncascade].  In both MSM and non-MSM taking ART around 90% have an undetectable viral load (GAY PERIODICS and AHOD). Putting these values into the equation above produces the values of $\beta_n$ and $\beta_m$.   
 4. We assume those with viral suppression have a 96% reduction in transmission to their sexual partners in line with the results from the HPTN-052 trial for those with detectable drug [@cohen2011prevention].           
+5.At enrolement 83% of the ATRAS cohort on ART were taking Tenofovir/Emtrcitabine (Truvada) as the 'backbone' of their regime. This means the vast majority of those on treatment are taking first-line drugs. For this analysis we assume all patients are on and remain on first-line ART over the period of analysis. From Scheider et. al. the average annual cost of first-line drugs is $10,685 ($6,945-$14,424) [@schneider2014cost]. Using this value we assume a range in the annual ART cost of \$`r artcost[1]-artcost[3]`. 
+6. If a partner of a Medicare ineligible becomes infected with HIV then they will eventually require care and treatment while they are living in Australia. As we are not tracking their infection progression in this analysis we use an estimate for the lifetime cost of providing ART. An anlaysis of the ... suggests someone starting treatment in their twenties will be taking ART for around 40 years (cite James's paper) spendng ~`r yearsFirst` years on first-line drugs,  ~`r yearsSecond` years on second-line drugs, ~`r yearsThird` years on third-line drugs, and the reminder of the time on higher classes of drug. Using the costs estimates from [@schneider2014cost], we assume the annual costs of proving each line of drugs is: \$`r costFirst` for first-line drugs, \$`r costFirst` for second-line drugs, \$`r costFirst` for third-line drugs, and \$`r costFirst` for fourth and higher lines of drugs. Mutiplying the values for each drug class and summing produces the undiscounted cost presented here. To account for all uncertianties in time on each treatment class and drug costs we assume a range of $\pm$ 25% in the overall undiscounted cost. 
+7. To discount future costs of providing ART to people ineligible for Medicare and those who become infected we apply a discount rate of 5% from the year of enrolement in ATRAS for all treatment costs. For discounting pruposes we include the time between infection and initiating ART this is estimated from data on the CD4 count at initiating therapy and estimates for the rate of CD4 decline. In recent years participants in the AHOD cohort have initiated ART at around 350 cells/$\mu$L (cite AHOD), it is estimated it takes 4.4 years for a person to reach this CD4 count post infection (cite James's paper). We therefore assume a range of 4 to 5 years for the time between infection and ART initiation. 
 
-5.At enrolement 83% of the ATRAS cohort on ART were taking Tenofovir/Emtrcitabine (Truvada) as the 'backbone' of their regime. This means the vast majority of those on treatment are taking first-line drugs. For this analysis we assume all patients are on and remain on first-line ART over the period of analysis. From Scheider et. al. the average annual cost of first-line drugs is $10,685 ($6,945-$14,424) [@schneider2014cost]. Using this value we assume a range in the annual ART cost of \$`r artcost[1]-artcost[3]`. Note Scheider et. al. estimate annual drug costs for third and higher lines of ART to be greater than $28,000 per year. <!--- may need revision ASR suggests \$16,000 per patient --->
-6. <!--- need to update with Australian data ---> If a partner of a Medicare ineligible becomes infected with HIV then they will require care and eventually treatment while they are living in Australia. As we are not tracking their infection progression in this analysis we use an estimate for the lifetime cost of providing care and treatment. We found no data specifically for Australia, however, Schackman et al estimated the lifetime cost of HIV care in the United States in 2006 at \$618,900 USD (undiscounted) for adults who initiate ART with CD4 $<$ 350 cells/$\mu$ L with a life expectancy of 24.2 years [@schackman2006lifetime]. While pharmaceuticals are priced at a premium compared to Australia, this cost equates to \$25,000 (undiscounted) per year of living with HIV which is comparable to the costs presented in endnote 11. For this analysis we use a value of \$620,000 for the lifetime cost of caring and treating someone who becomes infected with HIV and assume a range of $\pm$ 25%.
-6. DISCOUNTING calculations
 
 ```{r vectoriseParams, echo = FALSE,  messages = FALSE}
 
@@ -677,9 +678,7 @@ options(scipen=0)  # Set back to default
 
 #### Dicsussion - Comparison with number of new infections in Australia overall 
 
-To understand this rate of new infections we provide a comparison with correspodning estimates for the overall Australian population. In 2013 there was an estimated 26,640 PLHIV in Australia (with 9.4% unidagnosed) and there were estimated 912 new infections [@jamespaper]. This equates to `r round(100*912/26640,1)`% rate of new infections per population living with HIV. This is lower than the rate of new infections caused by Medicare-ineligibles provided above. However, the level of ART provision and viral suppression in HIV-positive pople who are ineligible for Medicare is lower than for the overall Australian population. According to recent estimates of the HIV treatment and cascade 17,661 PLHIV received ART in 2013 (approximatley 66% of the overall number of PLHIV) with 93% having an undetectable viral load [@jwilsoncascade]. Nationally this means 62% of the overall population of PLHIV have viral suppression (compared to 43% of the ATRAS cohort at enrolement). 
-
-If we use use the national estimates for art use and viral suppression for PLHIV then we obtain a transmission rate of 4% for the population of Medicare ineligbles. 
+To understand this rate of new infections we provide a comparison with correspodning estimates for the overall Australian population. 
 
 
 #### Appendix: Details of calculations
