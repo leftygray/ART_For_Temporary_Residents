@@ -35,13 +35,13 @@ currTime <- format(Sys.time(), "%y-%m-%d %H-%M-%S") # For appending to output fi
 # is date and time + a file tag + " Inputs" or " Results".R. The defaults are set to FALSE and the user has to manually
 # specifify the file to load. This is set up so long simulation runs do not need to be repeated to generate the dcoument. 
 
-loadFileTag <- "" # Set to empty to run things a fresh. Manually enter file name tag to regenerate old results. 
+loadFileTag <- "output/15-02-19 16-31-34 v2.0 Draft" # Set to empty to run things a fresh. Manually enter file name tag to regenerate old results. 
                   # loadFileTag has the structure of date and time + a file tag " Input.R" and " Results.R" are appended later.
-loadVars <- FALSE # Set to FALSE to run things a fresh.
-loadResults <- FALSE # Set to FALSE to run things a fresh. If TRUE a corresponding input file needs to exist and is loaded as well.
+loadVars <- TRUE # Set to FALSE to run things a fresh.
+loadResults <- TRUE # Set to FALSE to run things a fresh. If TRUE a corresponding input file needs to exist and is loaded as well.
 useSeed <- FALSE  # Use seed in loadVars file to get exactly the same results.
 
-saveFileTag <- ""  # Tag for output file names to specify scenarios
+saveFileTag <- " v2.0 Draft"  # Tag for output file names to specify scenarios
 saveVars <- FALSE       # Save input parameters so tehn can be loaded separately
 saveResults <- FALSE    # If TRUE saveVars is assumed TRUE as well. 
 
@@ -52,7 +52,7 @@ if (!file.exists(docFolder)){dir.create(file.path("./",docFolder))}
 # Produce plots in windows for viewing separately and save plots separately.
 showPlots <- TRUE   # Show plots in separate windows
 savePlots <- FALSE  # Save plots to file
-knitplots <- FALSE  # Insert plots in the produced Rmarkdown document
+knitplots <- TRUE  # Insert plots in the produced Rmarkdown document
 
 ```
 
@@ -67,7 +67,7 @@ if (!loadVars || !loadResults){
   startyear <- 2011 # year ATRAS started represents year zero
   datayears <- 3 # Number of years we have data - year zero and 2 years of followup. 
   runyears <- 6  # Number of years to run the model. Short term 5 to 10.
-  numsims <- 100  # Number of sampled parameter sets to run
+  numsims <- 1000  # Number of sampled parameter sets to run
   stochastic <- TRUE # Run stochastic equations?
   stochasticSims <- 20 # Number of sims for each parameter set if stochastic calculations are set-up
   
@@ -208,7 +208,7 @@ if (!loadVars && !loadResults){
   
   # Discounting rate
   discRate <- 0.05      # Discounting rate
-  timeTreat <- c(0,0)   # Time between infection and treatment where discounting would occur
+  timeTreat <- c(4,5)   # Time between infection and treatment where discounting would occur. 
   
   # Weighted total cost for lifetime treatment with discounting. More complicated equation as it depends on the year so is defined below
   
@@ -459,7 +459,7 @@ if (!loadResults){
   newinfections <- newinfections[order(newinfections$simulation),]
   
   # Add parameterset number and reorder to put in first column
-  newinfections$paramset <- t(paramSet) 
+  newinfections$paramset <- t(paramSet)
   newinfections <- newinfections[,c(ncol(newinfections),1:(ncol(newinfections)-1))] 
   
   # Subtract a year from year column to start things at year zero
@@ -468,13 +468,17 @@ if (!loadResults){
   # Discounted costs - Need to loop through each line of newinfections to account for the different startyears
   for (ii in 1:nrow(newinfections)){
     
-    simCostsDisc <-sum(discountcosts(lifecostYearly*costUncertainvec[newinfections$simulation[ii]], discRate,
-                                                    newinfections$year[ii], timeTreatVec[newinfections$simulation[ii]]))
+    simCostsDisc <-sum(discountcosts(lifecostYearly*costUncertainvec[newinfections$paramset[ii]], discRate,
+                                                    newinfections$year[ii], timeTreatVec[newinfections$paramset[ii]]))
     
     newinfections$lifecostatrasdisc[ii] <- simCostsDisc*newinfections$totalinfects[ii]
     newinfections$lifecostbasedisc[ii] <- simCostsDisc*newinfections$totalinfectsbase[ii]  
     
   }
+  
+  # Summed costs
+  newinfections$sumatrascost <- newinfections$costatras + newinfections$lifecostatras
+  newinfections$sumatrascostdisc <- newinfections$costatrasdisc + newinfections$lifecostatrasdisc
   
   
   # Write results to file
@@ -506,6 +510,10 @@ avertedSum <- aggregate(totalaverted ~ simulation + scenario, data=avertedinfect
 costs <- melt(newinfections,id.vars=c("year","simulation"),measure.vars=c("costatras","costatrasdisc","lifecostbase","lifecostatras",
               "lifecostbasedisc","lifecostatrasdisc"),variable.name="scenario",value.name="totalcost")
 costsSum <- aggregate(totalcost ~ simulation + scenario, data=costs, FUN=sum)
+
+costs2 <- melt(newinfections,id.vars=c("year","simulation"),measure.vars=c("lifecostbase","sumatrascost",
+              "lifecostbasedisc","sumatrascostdisc"),variable.name="scenario",value.name="totalcost")
+costsSum2 <- aggregate(totalcost ~ simulation + scenario, data=costs2, FUN=sum)
 
 # Basic summary calculations 
 
@@ -617,11 +625,14 @@ avertplot <- avertplot + xlab("Infections averted") + ylab("Density")
 avertplot <- avertplot + opts + theme(legend.position="none")
 
 # Create a plot for total costs 
-costplot <- ggplot(data = costsSum,aes(x=scenario,y=totalcost/1e6)) + theme_bw() + stat_summary(fun.y="median", geom="bar",
+costplot <- ggplot(data = costsSum2,aes(x=scenario,y=totalcost/1e6)) + theme_bw() + stat_summary(fun.y="median", geom="bar",
                    aes(fill=scenario,width=0.5),alpha = 0.5)
-costplot <- costplot + scale_fill_manual(values = c(colourmap[7],colourmap[2],colourmap[7]))
+costplot <- costplot + scale_fill_manual(values = c(colourmap[2],colourmap[7],colourmap[2],colourmap[7]))
 costplot <- costplot + stat_summary(fun.data="median_hilow",conf.int = 0.75, geom="errorbar",width = 0.2,size=1.1)
-costplot <- costplot + xlab("") + ylab("Total cost (millions AUD)") + scale_x_discrete(labels=c("ATRAS costs","Lifetime costs \n new infections \n Baseline","Lifetime costs \n new infections \n ATRAS")) 
+costplot <- costplot + xlab("") + ylab("Total cost (millions AUD)") + scale_x_discrete(labels=c("ART not \n provided","ART \n provided","ART not \n provided \n (discounted)", "ART \n provided \n (discounted)")) 
+costplot <- costplot + ylim(0,200) + geom_vline(aes(xintercept=2.5),linetype = "longdash")
+costplot <- costplot + annotate("text", x = 1.5, y = 175, label = "No discounting") + 
+            annotate("text", x = 3.5, y = 175, label = paste("Discounted ", toString(100*discRate), "%",sep = ""))
 costplot <- costplot + opts + theme(legend.position="none")
 
 # Show plots in separate windows and save to file if requested
