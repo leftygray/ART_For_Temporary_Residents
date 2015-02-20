@@ -126,7 +126,6 @@ Key assumptions:
 
 Our analysis includes an estimate of the annual cost of providing ART to Medicare ineligibles and their partners who become infected. We obtained estimates of the costs of providing treatment using previous work for Australian settings [@schneider2014cost]. For sexual partners of Medicare ineligibles who become infected with HIV we estimate the 'lifetime' cost of providing care and treatment. 
 
-
 #### Parameter table
 Table 1 lists all input parameters and their values and ranges.
 
@@ -315,17 +314,15 @@ timeTreatVec <- runif(numsims,timeTreat[1],timeTreat[2])
 
 #### Calculations for number of new infections caused by people ineligible for Medicare
 
-We use simple risk-euqation calculations to estimate the number of people who become infected through partnerships with HIV-positive people ineligible for Medicare. Details of the calculations are provided in the appendix.
+We use simple risk-equation calculations to estimate the number of people who become infected through partnerships with HIV-positive people ineligible for Medicare. Details of the calculations are provided in the appendix.
 
-The total number of new infections is given by the sum of the infections caused by Medicare-ineligible general males, general females, and MSM each year. For each population, we first calculate the probabilty of infecting another person using an equation incorporating the number of sexual acts per year, condom use, ART use, and the level of viral suppression. The proportion of the population taking ART and with suppressed virus changes overtime matching the ATRAS data in Table 1. 
+The total number of new infections is given by the sum of the infections caused by Medicare-ineligible MSM and non-MSM each year. For each population, we first calculate the probabilty of infecting another person using an equation incorporating the level of ART use and viral suppression. The proportion of the population taking ART and with suppressed virus changes overtime matching the ATRAS data in Table 1. 
 
-Using this probability the number of new infections caused by Medicare-ineligibles each year is then estimated through sampling from a binomial distribution. <!--- In the Rmarkdown script there is an option to use the risk equation approach instead of the sampling from a binomial distribution. Given the relatively small population size and the high levels of ART coverage and viral suppression, only a small number of new infections are likely and we use the stochastic approach in this anaylsis. ---> Adding all the population terms together gives the overall number of new infections caused by Medicare-ineligibles in a given year and cumulatively over time. 
+Using this probability the number of new infections caused by Medicare-ineligibles each year is then estimated through sampling from a binomial distribution. <!--- In the Rmarkdown script there is an option to use the risk equation approach instead of the sampling from a binomial distribution. Given the relatively small population size and the high levels of ART coverage and viral suppression, only a small number of new infections are likely and we use the stochastic approach in this anaylsis. ---> Adding the population terms together gives the overall number of new infections caused by Medicare-ineligibles in a given year and cumulatively over time. 
 
 #### Cost calculations
 
-The total cost of providing ART to people ineligible for Medicare ineligibles is calculated by mutliplying the annual number of people ineligible for Medicare infected with HIV by the annual cost of providing ART and summing over the period of analysis. For sexual partners of Medicare-ineligibles who become infected with HIV we calculate the overall future lifetime cost of providing care and treatment to these people by multiplying the cumulative number of people who acquire infection by the lifetime cost reported in Table 1.
-
-Discuss discounting.....
+The total cost of providing ART to people ineligible for Medicare ineligibles is calculated by mutliplying the annual number of people ineligible for Medicare infected with HIV by the annual cost of providing ART and summing over the period of analysis. For sexual partners of Medicare-ineligibles who become infected with HIV we calculate the cost per infection averted and overall future lifetime cost of providing care and treatment to these people by multiplying the cumulative number of people who acquire infection by the undicsounted (reported in Table 1) lifetime cost and the discounted lifetime cost. 
 
 #### Simulations
 
@@ -580,7 +577,7 @@ iqrnetcostdisc <- IQR(costsSum$totalcost[costsSum$scenario == "costatrasdisc"] -
 During the first year after enrolement for ATRAS the number of new infections casued by Medicare ineligible people is estimated to be `r median(startinfects)` (IQR:`r median(startinfects)-IQR(startinfects)/2` - `r median(startinfects)+IQR(startinfects)/2`). 
 As a percentage of the infected Medicare-ineligible population this number of new infections equates to `r round(100*median(startinfects)/median(popsizemat[,1]),1)`% of the population (Figure 1). 
 
-The impact of expanding ATRAS to all Medicare ineligbiles and acheiving almost universal viral suppression is to reduce annual new infections to a median of `r median(endinfects)` (IQR:`r median(endinfects)-IQR(endinfects)/2` - `r median(endinfects)+IQR(endinfects)/2`) after 5 years (Figure 1).  Corresponding to `r round(100*median(endinfects)/median(popsizemat[,5]),)`% of the Medicare ineligible population. 
+The impact of expanding ATRAS to all Medicare ineligbiles and achieving almost universal viral suppression is to reduce annual new infections to a median of `r median(endinfects)` (IQR:`r median(endinfects)-IQR(endinfects)/2` - `r median(endinfects)+IQR(endinfects)/2`) after 5 years (Figure 1).  Corresponding to `r round(100*median(endinfects)/median(popsizemat[,5]),)`% of the Medicare ineligible population. 
  
 ```{r plotcode, echo=FALSE,messages = FALSE,include=FALSE}
 # Create plots of results
@@ -657,12 +654,17 @@ Figure 2 shows the distributions for the cumulative number of new infections in 
 
 **Figure 2** - Total number of number of new infections (left) and the distribution in infections averted (right) over 5 years after all HIV-positive people ineligible for Medicare are provided ART.
 
-
 ```{r insertyplots2, echo=FALSE, messages = FALSE, warning = FALSE, fig.width=6, fig.height=3}
 if(knitplots){print(grid.arrange(totalplot,avertplot,ncol = 2))}
 ```
 
-Figure 3 shows the cumulative costs for providing ART to Medicare ineligible people and the resulting lifetime cost of providing care and treatment to the people they infected during this period. Providing ART to Medicare ineligibles over 5 years is estimated to a median cost of \$`r formatC(round(medacost,-4),format="d",big.mark=',')` (IQR: \$`r formatC(round(medacost -iqracost/2,4),format="d",big.mark=',')` - \$`r formatC(round(medacost + iqracost/2,4),format="d",big.mark=',')`). For partners of Medicare ineligibles who become infected during this time the undisconted cost for providing them with care and treatment over the rest of their life is \$`r formatC(round(medlacost,4),format="d",big.mark=',')` (IQR: \$`r formatC(round(medlacost -iqrlacost/2,4),format="d",big.mark=',')` - \$`r formatC(round(medlacost + iqrlacost/2,4),format="d",big.mark=',')`). This is a substantial reduction to the future estimated cost of providing care and treatment to people who acquire HIV through contact with people ineligible for Medicare (median \$`r formatC(round(medlbcost,4),format="d",big.mark=',')`:IQR \$`r formatC(round(medlbcost -iqrlbcost/2,4),format="d",big.mark=',')` - \$`r formatC(round(medlbcost + iqrlbcost/2,4),format="d",big.mark=',')`) (Figure 3).  
+Figure 3 shows the cumulative costs for providing ART to Medicare ineligible people and the resulting lifetime cost of providing care and treatment to the people they infected during this period. 
+
+
+
+
+
+Providing ART to Medicare ineligibles over 5 years is estimated to a median cost of \$`r formatC(round(medacost,-4),format="d",big.mark=',')` (IQR: \$`r formatC(round(medacost -iqracost/2,4),format="d",big.mark=',')` - \$`r formatC(round(medacost + iqracost/2,4),format="d",big.mark=',')`). For partners of Medicare ineligibles who become infected during this time the undisconted cost for providing them with care and treatment over the rest of their life is \$`r formatC(round(medlacost,4),format="d",big.mark=',')` (IQR: \$`r formatC(round(medlacost -iqrlacost/2,4),format="d",big.mark=',')` - \$`r formatC(round(medlacost + iqrlacost/2,4),format="d",big.mark=',')`). This is a substantial reduction to the future estimated cost of providing care and treatment to people who acquire HIV through contact with people ineligible for Medicare (median \$`r formatC(round(medlbcost,4),format="d",big.mark=',')`:IQR \$`r formatC(round(medlbcost -iqrlbcost/2,4),format="d",big.mark=',')` - \$`r formatC(round(medlbcost + iqrlbcost/2,4),format="d",big.mark=',')`) (Figure 3).  
 
 Adding the cost of providing treatment to all Medicare ineligibles and to the lifetime care cost of care and treatment for their partners who acquire infection gives an estimated cost of \$`r formatC(round(medlacost,4),format="d",big.mark=',')` (IQR: \$`r formatC(round(medtotcost -iqrtotcost/2,4),format="d",big.mark=',')` - \$`r formatC(round(medtotcost + iqrtotcost/2,4),format="d",big.mark=',')`) (taking the median of this sum for each simulation). This cost is lower than the cost of providing care and treatment to newly infected people over their lifetime under the baseline scenario. Providing ART to Medicare ineligibles results in a saving over the longterm. 
 
