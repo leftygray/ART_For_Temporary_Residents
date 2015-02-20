@@ -679,26 +679,26 @@ options(scipen=0)  # Set back to default
 
 #### Appendix: Details of calculations
 
-The overall number of new infections per year is calculated by summing the number of new infections caused by each population group; i.e., $$I(y) = I_f(y) + I_m(y) + I_g(y),$$ where $y$ is the given year.
+The overall number of new infections per year is calculated by summing the number of new infections caused by MSM and non-MSM population group; i.e., $$I(y) = I_m(y) + I_n(y),$$ where $y$ is the given year.
 
-Letting the index $x$ represent one of the populations groups (and droping $y$ for the time being), the probability of HIV transmission without ART is given by 
-$$\beta'_x = a_x(1-p^c_x)\beta_x + a_x p^c_x (1- \epsilon_c)\beta_x$$ or 
-$$\beta'_x = a_x (1-p^c_x\epsilon_x)\beta_x.$$ For $x = f$, $m$ the number of acts and condom use are equal and given by the index $h$. Similarly we can incorporate the prevention effects of treatment and suppressed virus, to give the probability of transmission to a HIV-negative sexual partner 
-$$\beta''_x = p_x[(1-\theta)\beta'_x + \theta(1-\psi)\beta'_x + \theta\psi(1-\epsilon_{ART})\beta'_x]$$ 
+Letting the index $x$ represent one of the populations groups (and droping $y$ for the time being), the probability of HIV transmission to a HIV-negative sexual partner is given by
+$$\beta'_x = [(1-\theta)\beta_x + \theta(1-\psi)\beta_x + \theta\psi(1-\epsilon_{ART})\beta_x]$$ 
 as ineffective treatment (resulting in unsuppressed virus) has the same transmission probability as no treatment. After some algebra this gives
-$$\beta''_x = (1-\theta\psi\epsilon_{ART})\beta'_x = a_x(1-p^c_x\epsilon_x)(1-\theta\psi\epsilon_{ART})\beta_x.$$ 
+$$\beta'_x = (1-\theta\psi\epsilon_{ART})\beta_x.$$ 
 
-Using this probability we can the number of new infections each year $I_x$ is given by a binomial distribution
-$$I_x \sim binom(Np_x,\beta''_x).$$ 
-For large N and $\beta''_x$ this is approximately equal to 
-$$I_x = Np_x\beta''_x = Np_xa_x(1-p^c_x\epsilon_x)(1-\theta\psi\epsilon_{ART})\beta_x,$$ 
+Using this probability, the number of new infections each year $I_x$ is given by a binomial distribution
+$$I_x \sim binom(Np_x,\beta'_x).$$ 
+For large N and small $\beta'_x$ this is approximately equal to 
+$$I_x = Np_x\beta'_x = Np_x(1-\theta\psi\epsilon_{ART})\beta_x,$$ 
 and the number of new infections is given by a risk equation. <!--- In the Rmarkdown script there is an option to use the risk equation approach instead of the sampling from a binomial disytribution ---> Given the relatively small population size and the high levels of ART coverage and viral suppression, likely resulting in a small  number so infections, we use the stochastic approach in this anaylsis. 
 
 Adding all the population terms together gives the overall number of new infections $I(y)$ in a given year $y$. The cumulative number of new infections in partners of medicare ineligibles over $y$ years is then equal to
 $$\Sigma = \sum_{y = 1}^{years} I(y).$$
 
-The total cost of providing ART and healthcare to Medicare ineligibles is then given by
-$$\sum_{y = 1}^{years} (N(y)(c_{care} + \theta c_{ART})$$
+#### WHERE I AM UP TO #####
+
+The total cost of providing ART to Medicare ineligibles is then given by
+$$\sum_{y = 1}^{years} N(y) \theta c_{ART}$$
 and the future costs of providing care and treatment to newly infected partners of Medicare ineligibles is
 $\Sigma c_{life}$.
 
