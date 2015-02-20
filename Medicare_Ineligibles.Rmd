@@ -528,6 +528,8 @@ avertiqr <- IQR(avertedSum$totalaverted)
 # Costs
 medacost <- median(costsSum$totalcost[costsSum$scenario == "costatras"])
 iqracost <- IQR(costsSum$totalcost[costsSum$scenario == "costatras"])
+medacostdisc <- median(costsSum$totalcost[costsSum$scenario == "costatrasdisc"])
+iqracostdisc <- IQR(costsSum$totalcost[costsSum$scenario == "costatrasdisc"])
 medlbcost <- median(costsSum$totalcost[costsSum$scenario == "lifecostbase"])
 iqrlbcost <- IQR(costsSum$totalcost[costsSum$scenario == "lifecostbase"])
 medlacost <- median(costsSum$totalcost[costsSum$scenario == "lifecostatras"])
@@ -658,17 +660,13 @@ Figure 2 shows the distributions for the cumulative number of new infections in 
 if(knitplots){print(grid.arrange(totalplot,avertplot,ncol = 2))}
 ```
 
-Figure 3 shows the cumulative costs for providing ART to Medicare ineligible people and the resulting lifetime cost of providing care and treatment to the people they infected during this period. 
+Providing ART to Medicare ineligibles over 5 years is estimated to a median undiscounted cost of \$`r formatC(round(medacost,-4),format="d",big.mark=',')` (IQR: \$`r formatC(round(medacost -iqracost/2,4),format="d",big.mark=',')` - \$`r formatC(round(medacost + iqracost/2,4),format="d",big.mark=',')`) and a median discounted cost of \$`r formatC(round(medacostdisc,-4),format="d",big.mark=',')` (IQR: \$`r formatC(round(medacostdisc -iqracostdisc/2,4),format="d",big.mark=',')` - \$`r formatC(round(medacostdisc + iqracostdisc/2,4),format="d",big.mark=',')`). This corresponds to a cost per infection averted of 
+\$`r formatC(round(medcostpiadisc,-4),format="d",big.mark=',')` (IQR: \$`r formatC(round(medcostpiadisc -iqrcostpiadisc/2,4),format="d",big.mark=',')` - \$`r formatC(round(medcostpiadisc + iqrcostpiadisc/2,4),format="d",big.mark=',')`)
+(with 5% discounting).
 
+Figure 3 shows the cumulative costs for providing ART to Medicare ineligible people for the next 5 years and the resulting lifetime costs of providing treatment to the people they infected during this period. The median undiscounted cumulative cost when ART is expanded to all Medicare ineligible PLHIV is \$`r formatC(round(mednetcost,4),format="d",big.mark=',')` (IQR: \$`r formatC(round(mednetcost -iqrnetcost/2,4),format="d",big.mark=',')` - \$`r formaC(round(mednetcost + iqrnetcost/2,4),format="d",big.mark=',')`) (taking the median of this sum for each simulation). This cost is lower than the cost of providing treatment to newly infected people when ART is not provided to PLHIV who are Medicare ineligible (Figure 3). However, when discounting is taken into count, the long term costs reduce substantially to \$`r formatC(round(mednetcostdisc,4),format="d",big.mark=',')` (IQR: \$`r formatC(round(mednetcostdisc -iqrnetcostdisc/2,4),format="d",big.mark=',')` - \$`r formaC(round(mednetcostdisc + iqrnetcostdisc/2,4),format="d",big.mark=',')`) but the total costs for the expanded access scenario end up being slightly greater than the baseline scenario of no ART provision to Medicare ineligibles.  
 
-
-
-
-Providing ART to Medicare ineligibles over 5 years is estimated to a median cost of \$`r formatC(round(medacost,-4),format="d",big.mark=',')` (IQR: \$`r formatC(round(medacost -iqracost/2,4),format="d",big.mark=',')` - \$`r formatC(round(medacost + iqracost/2,4),format="d",big.mark=',')`). For partners of Medicare ineligibles who become infected during this time the undisconted cost for providing them with care and treatment over the rest of their life is \$`r formatC(round(medlacost,4),format="d",big.mark=',')` (IQR: \$`r formatC(round(medlacost -iqrlacost/2,4),format="d",big.mark=',')` - \$`r formatC(round(medlacost + iqrlacost/2,4),format="d",big.mark=',')`). This is a substantial reduction to the future estimated cost of providing care and treatment to people who acquire HIV through contact with people ineligible for Medicare (median \$`r formatC(round(medlbcost,4),format="d",big.mark=',')`:IQR \$`r formatC(round(medlbcost -iqrlbcost/2,4),format="d",big.mark=',')` - \$`r formatC(round(medlbcost + iqrlbcost/2,4),format="d",big.mark=',')`) (Figure 3).  
-
-Adding the cost of providing treatment to all Medicare ineligibles and to the lifetime care cost of care and treatment for their partners who acquire infection gives an estimated cost of \$`r formatC(round(medlacost,4),format="d",big.mark=',')` (IQR: \$`r formatC(round(medtotcost -iqrtotcost/2,4),format="d",big.mark=',')` - \$`r formatC(round(medtotcost + iqrtotcost/2,4),format="d",big.mark=',')`) (taking the median of this sum for each simulation). This cost is lower than the cost of providing care and treatment to newly infected people over their lifetime under the baseline scenario. Providing ART to Medicare ineligibles results in a saving over the longterm. 
-
-**Figure 3** - Median total costs for providing all Medicare ineligbles with ART and the lifetime care and treatment costs for partners of Medicare Ineligibles who acquire infection over 5 years. The bars show the interquartile range in total costs across all simulations.
+**Figure 3** - Median total costs for providing all Medicare ineligbles with ART and the lifetime treatment costs for partners of Medicare Ineligibles who acquire infection over 5 years. The bars show the interquartile range in total costs across all simulations.
 
 ```{r insertyplots3, echo=FALSE, messages = FALSE, warning = FALSE, fig.width=6, fig.height=3}
 if(knitplots){print(costplot)}
@@ -677,10 +675,6 @@ if(knitplots){print(costplot)}
 ```{r tidyup,echo = FALSE}
 options(scipen=0)  # Set back to default
 ```
-
-#### Dicsussion - Comparison with number of new infections in Australia overall 
-
-To understand this rate of new infections we provide a comparison with correspodning estimates for the overall Australian population. 
 
 
 #### Appendix: Details of calculations
