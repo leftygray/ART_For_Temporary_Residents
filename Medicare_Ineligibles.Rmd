@@ -35,10 +35,10 @@ currTime <- format(Sys.time(), "%y-%m-%d %H-%M-%S") # For appending to output fi
 # is date and time + a file tag + " Inputs" or " Results".R. The defaults are set to FALSE and the user has to manually
 # specifify the file to load. This is set up so long simulation runs do not need to be repeated to generate the dcoument. 
 
-loadFileTag <- "output/15-02-19 16-31-34 v2.0 Draft" # Set to empty to run things a fresh. Manually enter file name tag to regenerate old results. 
+loadFileTag <- "output/15-02-21 15-20-37 v2.0 Draft" # Set to empty to run things a fresh. Manually enter file name tag to regenerate old results. 
                   # loadFileTag has the structure of date and time + a file tag " Input.R" and " Results.R" are appended later.
-loadVars <- TRUE # Set to FALSE to run things a fresh.
-loadResults <- TRUE # Set to FALSE to run things a fresh. If TRUE a corresponding input file needs to exist and is loaded as well.
+loadVars <- FALSE # Set to FALSE to run things a fresh.
+loadResults <- FALSE # Set to FALSE to run things a fresh. If TRUE a corresponding input file needs to exist and is loaded as well.
 useSeed <- FALSE  # Use seed in loadVars file to get exactly the same results.
 
 saveFileTag <- " v2.0 Draft"  # Tag for output file names to specify scenarios
@@ -50,9 +50,9 @@ if (!file.exists(outputFolder)){dir.create(file.path("./",outputFolder))}
 if (!file.exists(docFolder)){dir.create(file.path("./",docFolder))}
 
 # Produce plots in windows for viewing separately and save plots separately.
-showPlots <- TRUE   # Show plots in separate windows
+showPlots <- FALSE   # Show plots in separate windows
 savePlots <- FALSE  # Save plots to file
-knitplots <- TRUE  # Insert plots in the produced Rmarkdown document
+knitplots <- FALSE  # Insert plots in the produced Rmarkdown document
 
 ```
 
@@ -67,9 +67,9 @@ if (!loadVars || !loadResults){
   startyear <- 2011 # year ATRAS started represents year zero
   datayears <- 3 # Number of years we have data - year zero and 2 years of followup. 
   runyears <- 6  # Number of years to run the model. Short term 5 to 10.
-  numsims <- 1000  # Number of sampled parameter sets to run
+  numsims <- 10  # Number of sampled parameter sets to run
   stochastic <- TRUE # Run stochastic equations?
-  stochasticSims <- 20 # Number of sims for each parameter set if stochastic calculations are set-up
+  stochasticSims <- 2 # Number of sims for each parameter set if stochastic calculations are set-up
   
   # Generate and store a random integer for set.seed so we can rerun things exactly if we want to
   currseed <- sample(1:10^6,1)
@@ -93,14 +93,14 @@ if (!loadVars || !loadResults){
 
 #### Demographics
 
-For this analysis we consider a population of PLHIV who are medicare ineligible with the characteristics of people in ATRAS [@petoumenos2013australian]. The overall population is split into heterosexual males and females, and males who are men who have sex with men (MSM) (which, for the purposes of this analysis, assume are exclusively homosexual). We assume females do not engage in sex work and the population does not include people who inject drugs (PWID). The proportion of people in each of these populations is based on ATRAS data and assumed to be constant over time. This comparmentalisation of the population is used to distinguish the risk of HIV infection rather than treatment coverage and adherence.
+For this analysis we consider a population of PLHIV who are medicare ineligible with the characteristics of people in ATRAS [@petoumenos2013australian]. The overall population is split into  males who are men who have sex with men (MSM) (which, for the purposes of this analysis, we assume are exclusively homosexual) and all those who are not MSM. The proportion of people in each of these populations is based on ATRAS data and assumed to be constant over time. This comparmentalisation of the population is used to distinguish the risk of HIV infection rather than treatment coverage and adherence.
 
-The number of medicare ineligibles can change over time with people becoming eligible for medicare provided ART and new temporary residents entering the population. This movement is represented by a constant growth rate for the population $\pi$ (which is positive for a growing population and negative for a declining population). <!--- In ATRAS aproximately 20% of people become medicare eligible and leave the population each year, this would be lower bound on the rate of population change --->. Letting $N(y)$ equal the total population size in year $y$, the number of medicare ineligible people in the population is then given by
-$$N(y) = N(0)\pi^y,$$. For this analysis we assume only a small change in the population over time so the overall population size is relatively constant.
+The number of medicare ineligibles can change over time with people becoming eligible for medicare provided ART and new temporary residents entering the population. This movement is represented by a constant growth rate for the population $\pi$ (which is positive for a growing population and negative for a declining population). <!--- In ATRAS aproximately 20% of people become medicare eligible and leave the population each year, this would be lower bound on the rate of population change ---> Letting $N(y)$ equal the total population size in year $y$, the number of medicare ineligible people in the population is then given by
+$$N(y) = N(0)\pi^y.$$ For this analysis we assume only a small change in the population over time so the overall population size is relatively constant.
 
 #### Clinical characteristics
 
-The main aim of this analysis is to investigate the impact on HIV transmission of providing all medicare ineligible people in ATRAS with ART. For the calculations we simply consider the proportion of the population taking ART and the proportion of those on ART with viral suppression. Both of these inputs can change over time based on the ATRAS data. We do not consider different proportions for each population group. The most recent data value is used for projections beyond the years of available data. 
+The main aim of this analysis is to investigate the effect of providing all Medicare ineligible people in ATRAS with ART on HIV transmission. For the calculations we simply consider the proportion of the population taking ART and the proportion of those on ART with viral suppression. Both of these inputs can change over time based on the ATRAS data. We do not consider different proportions for each population group. The most recent data value is used for projections beyond the years of available data. 
 
 #### HIV transmission to partners
 
@@ -119,12 +119,11 @@ Key assumptions:
 * HIV transmission from Medicare ineligibles who are not on ART is the same as for the Australian population of PLHIV not on ART.
 * Partners of HIV positive people who are ineligible for Medicare are assumed to be Medicare eligible.
 * Those with unsuppressed virus have the same transmission risk as those not taking ART.
-* Females and heterosexual males have the same risk of transmission.
 * Transmission parameters are assumed constant over time.
 
 #### Costs associated with ART provision
 
-Our analysis includes an estimate of the annual cost of providing ART to Medicare ineligibles and their partners who become infected. We obtained estimates of the costs of providing treatment using previous work for Australian settings [@schneider2014cost]. For sexual partners of Medicare ineligibles who become infected with HIV we estimate the 'lifetime' cost of providing care and treatment. 
+Our analysis includes an estimate of the annual cost of providing ART to Medicare ineligibles and their partners who become infected. We obtained estimates of the costs of providing treatment using previous work for Australian settings [@schneider2014cost]. For sexual partners of Medicare ineligibles who become infected with HIV we estimate the 'lifetime' cost of providing and treatment. 
 
 #### Parameter table
 Table 1 lists all input parameters and their values and ranges.
@@ -222,33 +221,38 @@ if (!loadVars && !loadResults){
 
 **Table 1** - Calculation input parameter ranges. Justifications for these parameter ranges are provided in endnotes. The simulations used for the calculations take samples from these ranges assuming a uniform distribution. 
 
-Parameter  | Description                | Range                                        | Reference
------------|----------------------------|----------------------------------------------|----------------------
+Parameter  | Description                | Range                                        | Reference    
+-----------|----------------------------|----------------------------------------------|----------------------   
 **Demographic parameters** | | |    
-$N(0)$   | Overall population size in initial year (2014) |  [`r popsize[1]` - `r popsize[2]`] | 1        
-$\pi$ | Multiplicative change in annual population | [`r pop_growth[1]` - `r pop_growth[2]`]/yr | 1            
-$p_m$ | Proportion of Medicare-ineligible population of PLHIV who are MSM| [`r prop_m[1]` - `r prop_m[2]`] | 1
+$N(0)$ | Overall population size in initial year (2014) |  [`r popsize[1]` - `r popsize[2]`] | 1   
+$\pi$ | Multiplicative change in annual population | [`r pop_growth[1]` - `r pop_growth[2]`]/yr | 1              
+$p_m$ | Proportion of Medicare-ineligible population of PLHIV who are MSM | [`r prop_m[1]` - `r prop_m[2]`] | 1  
 $p_n$ | Proportion of Medicare-ineligible population of PLHIV who are non-MSM | Given by $1-p_m$ | 1  
-**Clinical parameters** | | | 
-$\theta$ | Proportion of population taking ART | 63% at enrolment and 95% after 12 months $\pm$ 5%| 2  
-$\psi$ | Proportion of population taking ART with undetectable viral load | 70% at enrolement, 88% after 12 months, and 96% after 24 months $\pm$ 5% | 2  
-**HIV transmission parameters** | | | 
-$\beta_n$ | Annual transmission probability from non-MSM to partners in the absence of ART  |  [`r betan[1]` - `r betan[2]`]| 3  
-$\beta_m$ | Annual transmission probability from MSM to partners in the absence of ART |  [`r betam[1]` - `r betam[2]`]| 3  
-$\epsilon_{ART}$ | Efficacy of ART in preventing HIV transmission if virus is suppressed | [`r epsilon_art[1]` - `r epsilon_art[2]`]| 4 
-**Treatment costs** | | | 
-$c_{ART}$ | Average annual cost of providing ART to Medicare ineligbles | [\$`r formatC(artcost[1],format="d",big.mark=',')` - \$`r formatC(artcost[2],format="d",big.mark=',')`] | 5
-$c_{life}$ | Average lifetime cost of providing ART post infection (undiscounted) | [\$`r formatC(lifecostRange[1],format="d",big.mark=',')` - \$`r formatC(lifecostRange[2],format="d",big.mark=',')`] | 6
-$r_{disc}$ | Dsicounting rate | `r 100*discRate`% | 7  
-$t_{ART}$ | Average time between infection and initiating ART | [`r timeTreat[1]` - `r timeTreat[2]`] years | 7
- 
+**Clinical parameters** | | |   
+$\theta$ | Proportion of population taking ART | 63% at enrolment and 95% after 12 months $\pm$ 5% | 2  
+$\psi$ | Proportion of population taking ART with undetectable viral load | 70% at enrolement, 88% after 12 months, and 96% after 24 months $\pm$ 5%    | 2  
+**HIV transmission parameters** | | |   
+$\beta_n$ | Annual transmission probability from non-MSM to partners in the absence of ART  |  [`r round(betanRange[1],4)` - `r round(betanRange[2],4)`] | 3    
+$\beta_m$ | Annual transmission probability from MSM to partners in the absence of ART |  [`r round(betamRange[1],4)` - `r round(betanRange[2],4)`] |  3  
+$\epsilon_{ART}$ | Efficacy of ART in preventing HIV transmission if virus is suppressed | [`r epsilon_art[1]` - `r epsilon_art[2]`] | 4   
+**Treatment costs** | | |   
+$c_{ART}$ | Average annual cost of providing ART to Medicare ineligbles | [\$`r formatC(artcost[1],format="d",big.mark=',')` - \$`r formatC(artcost[2],format="d",big.mark=',')`] | 5   
+$c_{life}$ | Average lifetime cost of providing ART post infection (undiscounted) | [\$`r formatC(lifecostRange[1],format="d",big.mark=',')` - \$`r formatC(lifecostRange[2],format="d",big.mark=',')`] | 6   
+$r_{disc}$ | Discounting rate | `r 100*discRate`% | 7  
+$t_{ART}$ | Average time between infection and initiating ART | [`r timeTreat[1]` - `r timeTreat[2]`] years | 7 
    
 1. The 2013 ATRAS report <!--- data for 2011-12 when ATRAS started. Up to 460 in 2014 ---> estimates there are 450 Medicare ineligible PLHIV in Australia [@petoumenos2013australian]. We assume a range in the population between 400 and 500 PLHIV with the potential for only a small change in population size over time. In the population of 180 at enrolment there were 47 females and 133 males in the cohort with 89 of the males attributing their HIV infection to MSM exposure [@petoumenos2013australian]. Assuming the same demographic distribution over time, we assume 40-60% of the population is MSM with the remainder non-MSM.  
-2. At enrolment 62.8% of ATRAS patients were already receiving ART with 71.8% having undetectable viral load [@petoumenos2013australian]. After  enrolment all patients were put onto ART resulting in 87% having undetectable viral load at 12 months and 96% having undetectable viral load at 24 months [@petoumenos2013australian]. Based on the ATRAS data we assume the percenatge of Medicare ineligibles on ART increases from 70% to 95% with a range of $\pm$ 5% with the proportion with undetecvtable virus increasing from 70% to 96% over two years with a range of $\pm$ 5%.   
+
+2. At enrolment 62.8% of ATRAS patients were already receiving ART with 71.8% having undetectable viral load [@petoumenos2013australian]. After  enrolment all patients were put onto ART resulting in 87% having undetectable viral load at 12 months and 96% having undetectable viral load at 24 months [@petoumenos2013australian]. Based on the ATRAS data we assume the percenatge of Medicare ineligibles on ART increases from 70% to 95% with a range of $\pm$ 5% with the proportion with undetecvtable virus increasing from 70% to 96% over two years with a range of $\pm$ 5%.  
+
 3. These values are calculated using data for the overall population of PLHIV in Australia. Using the equation $I = N(1-\theta)\beta + N\theta(1-\psi)\beta + N\theta\psi(1-\epsilon_{ART})\beta = N\beta(1-\theta\psi\epsilon_{ART})$ where $I$ is the overall incidence in Australian MSM and non-MSM, $N$ is the overall number of PLHIV in Australia who are MSM and non-MSM, and the remaining parmaters have the same meaning as in Table 1 we can estimate the value of $\beta$ for MSM and non-MSM. In 2013 there was an estimated 26,640 PLHIV in Australia and there were estimated 912 new infections [@jamespaper] of which around 75% are attributed to homosexual contact [@asr2014report]. According to recent estimates for the HIV treatment cascade in Australia around 75% of MSM living with HIV [@gcps2014report] and 55% of non-MSM living with HIV are taking ART [@jwilsoncascade].  In both MSM and non-MSM taking ART, around 90% have an undetectable viral load (GAY PERIODICS and AHOD). Putting these values into the equation above produces the values of $\beta_n$ and $\beta_m$.   
-4. We assume those with viral suppression have a 96% reduction in transmission to their sexual partners in line with the results from the HPTN-052 trial for those with detectable drug [@cohen2011prevention].           
+
+4. We assume those with viral suppression have a 96% reduction in transmission to their sexual partners in line with the results from the HPTN-052 trial for those with detectable drug [@cohen2011prevention].   
+
 5.At enrolement 83% of the ATRAS cohort on ART were taking Tenofovir/Emtrcitabine (Truvada) as the 'backbone' of their regime. This means the vast majority of those on treatment are taking first-line drugs. For this analysis we assume all patients are on and remain on first-line ART over the period of analysis. From Scheider et. al. the average annual cost of first-line drugs is $10,685 ($6,945-$14,424) [@schneider2014cost]. Using this value we assume a range in the annual ART cost of \$`r artcost[1]-artcost[3]`. 
+
 6. If a partner of a Medicare ineligible becomes infected with HIV then they will eventually require care and treatment while they are living in Australia. As we are not tracking their infection progression in this analysis we use an estimate for the lifetime cost of providing ART. An analysis of the life expectancy of PLHIV in Australia given currently available antiretroviral treatments suggests someone starting treatment in their twenties will be taking ART for around 40 years [@jansson2013currently] spendng ~`r yearsFirst` years on first-line drugs,  ~`r yearsSecond` years on second-line drugs, ~`r yearsThird` years on third-line drugs, and the reminder of the time on higher classes of drug. Using the costs estimates from [@schneider2014cost], we assume the annual costs of proving each line of drugs is: \$`r costFirst` for first-line drugs, \$`r costFirst` for second-line drugs, \$`r costFirst` for third-line drugs, and \$`r costFirst` for fourth and higher lines of drugs. Mutiplying the values for each drug class and summing produces the undiscounted cost presented here. To account for all uncertianties in time on each treatment class and drug costs we assume a range of $\pm$ 25% in the overall undiscounted cost. 
+
 7. To discount future costs of providing ART to people ineligible for Medicare and those who become infected we apply a discount rate of 5% from the year of enrolement in ATRAS for all treatment costs. For discounting pruposes we include the time between infection and initiating ART, this is estimated from data on the CD4 count at initiating therapy and estimates for the rate of CD4 decline. In recent years participants in the AHOD cohort have initiated ART at around 350 cells/$\mu$L [@ahod2014report], it is estimated it takes 4.4 years for a person to reach this CD4 count post infection [@jamespaper]. We therefore assume a range of 4 to 5 years for the time between infection and ART initiation. 
 
 
@@ -664,7 +668,7 @@ Providing ART to Medicare ineligibles over 5 years is estimated to a median undi
 \$`r formatC(round(medcostpiadisc,-4),format="d",big.mark=',')` (IQR: \$`r formatC(round(medcostpiadisc -iqrcostpiadisc/2,4),format="d",big.mark=',')` - \$`r formatC(round(medcostpiadisc + iqrcostpiadisc/2,4),format="d",big.mark=',')`)
 (with 5% discounting).
 
-Figure 3 shows the cumulative costs for providing ART to Medicare ineligible people for the next 5 years and the resulting lifetime costs of providing treatment to the people they infected during this period. The median undiscounted cumulative cost when ART is expanded to all Medicare ineligible PLHIV is \$`r formatC(round(mednetcost,4),format="d",big.mark=',')` (IQR: \$`r formatC(round(mednetcost -iqrnetcost/2,4),format="d",big.mark=',')` - \$`r formaC(round(mednetcost + iqrnetcost/2,4),format="d",big.mark=',')`) (taking the median of this sum for each simulation). This cost is lower than the cost of providing treatment to newly infected people when ART is not provided to PLHIV who are Medicare ineligible (Figure 3). However, when discounting is taken into count, the long term costs reduce substantially to \$`r formatC(round(mednetcostdisc,4),format="d",big.mark=',')` (IQR: \$`r formatC(round(mednetcostdisc -iqrnetcostdisc/2,4),format="d",big.mark=',')` - \$`r formaC(round(mednetcostdisc + iqrnetcostdisc/2,4),format="d",big.mark=',')`) but the total costs for the expanded access scenario end up being slightly greater than the baseline scenario of no ART provision to Medicare ineligibles.  
+Figure 3 shows the cumulative costs for providing ART to Medicare ineligible people for the next 5 years and the resulting lifetime costs of providing treatment to the people they infected during this period. The median undiscounted cumulative cost when ART is expanded to all Medicare ineligible PLHIV is \$`r formatC(round(mednetcost,4),format="d",big.mark=',')` (IQR: \$`r formatC(round(mednetcost -iqrnetcost/2,4),format="d",big.mark=',')` - \$`r formatC(round(mednetcost + iqrnetcost/2,4),format="d",big.mark=',')`) (taking the median of this sum for each simulation). This cost is lower than the cost of providing treatment to newly infected people when ART is not provided to PLHIV who are Medicare ineligible (Figure 3). However, when discounting is taken into count, the long term costs reduce substantially to \$`r formatC(round(mednetcostdisc,4),format="d",big.mark=',')` (IQR: \$`r formatC(round(mednetcostdisc -iqrnetcostdisc/2,4),format="d",big.mark=',')` - \$`r formatC(round(mednetcostdisc + iqrnetcostdisc/2,4),format="d",big.mark=',')`) but the total costs for the expanded access scenario end up being slightly greater than the baseline scenario of no ART provision to Medicare ineligibles.  
 
 **Figure 3** - Median total costs for providing all Medicare ineligbles with ART and the lifetime treatment costs for partners of Medicare Ineligibles who acquire infection over 5 years. The bars show the interquartile range in total costs across all simulations.
 
@@ -695,10 +699,10 @@ and the number of new infections is given by a risk equation. <!--- In the Rmark
 Adding the population terms together gives the overall number of new infections $I(y)$ in a given year $y$. The cumulative number of new infections in partners of medicare ineligibles over $y$ years is then equal to
 $$\Sigma = \sum_{y = 1}^{years} I(y)$$ 
 and the total cost of providing ART to Medicare ineligibles is
-$$\sum_{y = 1}^{years} N(y) \theta c_{ART}/(1+r_disc)^y$$ (undiscounted costs are calculated by setting the discount rate to 1). 
+$$\sum_{y = 1}^{years} N(y) \theta c_{ART}/(1+r_disc)^y$$ (undiscounted costs are calculated by setting the discount rate to $1$). 
 The total future costs of providing treatment to newly infected partners of Medicare ineligibles is given by 
 $$\sum_{y = 1}^{years I(y)*\sum_{l = 1}^{y_{art}} c_{ART}(l)/(1+r_disc)^{y+t_i$$
-where $y_{ART}$ is the number of years infected people will be on ART, $c_{ART}(l)$ is the annual cost of ART $l$ years from initiation, and $t_i$ is the time between infection initiating ART. 
+where $y_{ART}$ is the number of years infected people will be on ART, $c_{ART}(l)$ is the annual cost of ART $l$ years from initiation, and $t_i$ is the time between infection initiating ART (undiscounted costs are calculated by setting the discount rate to $0$).  
 
 ### References
 
