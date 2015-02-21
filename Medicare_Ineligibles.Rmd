@@ -224,7 +224,7 @@ if (!loadVars && !loadResults){
 Parameter  | Description                | Range                                        | Reference    
 -----------|----------------------------|----------------------------------------------|----------------------   
 **Demographic parameters** | | |    
-$N(0)$ | Overall population size in initial year (2014) |  [`r popsize[1]` - `r popsize[2]`] | 1   
+$N(0)$ | Overall population size in initial year |  [`r popsize[1]` - `r popsize[2]`] | 1   
 $\pi$ | Multiplicative change in annual population | [`r pop_growth[1]` - `r pop_growth[2]`]/yr | 1              
 $p_m$ | Proportion of Medicare-ineligible population of PLHIV who are MSM | [`r prop_m[1]` - `r prop_m[2]`] | 1  
 $p_n$ | Proportion of Medicare-ineligible population of PLHIV who are non-MSM | Given by $1-p_m$ | 1  
@@ -240,6 +240,7 @@ $c_{ART}$ | Average annual cost of providing ART to Medicare ineligbles | [\$`r 
 $c_{life}$ | Average lifetime cost of providing ART post infection (undiscounted) | [\$`r formatC(lifecostRange[1],format="d",big.mark=',')` - \$`r formatC(lifecostRange[2],format="d",big.mark=',')`] | 6   
 $r_{disc}$ | Discounting rate | `r 100*discRate`% | 7  
 $t_{ART}$ | Average time between infection and initiating ART | [`r timeTreat[1]` - `r timeTreat[2]`] years | 7 
+   
    
 1. The 2013 ATRAS report <!--- data for 2011-12 when ATRAS started. Up to 460 in 2014 ---> estimates there are 450 Medicare ineligible PLHIV in Australia [@petoumenos2013australian]. We assume a range in the population between 400 and 500 PLHIV with the potential for only a small change in population size over time. In the population of 180 at enrolment there were 47 females and 133 males in the cohort with 89 of the males attributing their HIV infection to MSM exposure [@petoumenos2013australian]. Assuming the same demographic distribution over time, we assume 40-60% of the population is MSM with the remainder non-MSM.  
 
