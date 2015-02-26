@@ -543,6 +543,13 @@ iqrlacost <- IQR(costsSum$totalcost[costsSum$scenario == "lifecostatras"])
 medtotcost <- median(costsSum$totalcost[costsSum$scenario == "costatras"] + costsSum$totalcost[costsSum$scenario == "lifecostatras"])
 iqrtotcost <- IQR(costsSum$totalcost[costsSum$scenario == "costatras"] + costsSum$totalcost[costsSum$scenario == "lifecostatras"])
 
+medtotcostdisc<- median(costsSum$totalcost[costsSum$scenario == "costatrasdisc"] + costsSum$totalcost[costsSum$scenario == "lifecostatrasdisc"])
+iqrtotcostdisc <- IQR(costsSum$totalcost[costsSum$scenario == "costatrasdisc"] + costsSum$totalcost[costsSum$scenario == "lifecostatrasdisc"])
+
+medtotcostbasedisc<- median(costsSum$totalcost[costsSum$scenario == "lifecostbasedisc"])
+iqrtotcostbasedisc <- IQR(costsSum$totalcost[costsSum$scenario == "lifecostbasedisc"])
+
+
 # Cost per infection averted
 medcostpia <- median(costsSum$totalcost[costsSum$scenario == "costatras"]/avertedSum$totalaverted)
 iqrcostpia <- IQR(costsSum$totalcost[costsSum$scenario == "costatras"]/avertedSum$totalaverted)
@@ -669,7 +676,7 @@ Providing ART to Medicare ineligibles over `r runyears` years is estimated to ha
 \$`r formatC(round(medcostpiadisc,-4),format="d",big.mark=',')` (IQR: \$`r formatC(round(medcostpiadisc -iqrcostpiadisc/2,4),format="d",big.mark=',')` - \$`r formatC(round(medcostpiadisc + iqrcostpiadisc/2,4),format="d",big.mark=',')`)
 (with 5% discounting).
 
-Figure 3 shows the cumulative costs for providing ART to Medicare ineligible people for the next `r runyears` years and the resulting lifetime costs of providing treatment to the people they infected during this period. The median undiscounted cumulative cost when ART is expanded to all Medicare ineligible PLHIV is \$`r formatC(round(medtotcost,4),format="d",big.mark=',')` (IQR: \$`r formatC(round(medtotcost -iqrtotcost/2,4),format="d",big.mark=',')` - \$`r formatC(round(medtotcost + iqrtotcost/2,4),format="d",big.mark=',')`) (taking the median of the sum for each simulation). This cost is lower than the cost of providing treatment to newly infected people when ART access is denied to PLHIV who are Medicare ineligible (Figure 3). However, when discounting is taken into count, the long term costs reduce substantially to \$`r formatC(round(mednetcostdisc,4),format="d",big.mark=',')` (IQR: \$`r formatC(round(mednetcostdisc -iqrnetcostdisc/2,4),format="d",big.mark=',')` - \$`r formatC(round(mednetcostdisc + iqrnetcostdisc/2,4),format="d",big.mark=',')`) and the total costs for the expanded access scenario are slightly higher than the denied access scenario.  
+Figure 3 shows the cumulative costs for providing ART to Medicare ineligible people for the next `r runyears` years and the resulting lifetime costs of providing treatment to the people they infected during this period. The median undiscounted cumulative cost when ART is expanded to all Medicare ineligible PLHIV is \$`r formatC(round(medtotcost,4),format="d",big.mark=',')` (IQR: \$`r formatC(round(medtotcost -iqrtotcost/2,4),format="d",big.mark=',')` - \$`r formatC(round(medtotcost + iqrtotcost/2,4),format="d",big.mark=',')`) (taking the median of the sum for each simulation). This cost is lower than the cost of providing treatment to newly infected people when ART access is denied to PLHIV who are Medicare ineligible (Figure 3). However, when discounting is taken into count, the long term costs reduce substantially to \$`r formatC(round(medtotcostdisc,4),format="d",big.mark=',')` (IQR: \$`r formatC(round(medtotcostdisc -iqrtotcostdisc/2,4),format="d",big.mark=',')` - \$`r formatC(round(medtotcostdisc + iqrtotcostdisc/2,4),format="d",big.mark=',')`) and the total costs for the expanded access scenario are slightly higher than the denied access scenario median \$`r formatC(round(medtotcostbasedisc,4),format="d",big.mark=',')` (IQR: \$`r formatC(round(medtotcostbasedisc -iqrtotcostbasedisc/2,4),format="d",big.mark=',')` - \$`r formatC(round(medtotcostbasedisc + iqrtotcostbasedisc/2,4),format="d",big.mark=',')`).
 
 **Figure 3** - Median total costs for providing all Medicare ineligbles with ART and the lifetime treatment costs for partners of Medicare Ineligibles who acquire infection over `r runyears` years. The bars show the interquartile range in total costs across all simulations.
 
