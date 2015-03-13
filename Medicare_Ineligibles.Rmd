@@ -35,13 +35,13 @@ currTime <- format(Sys.time(), "%y-%m-%d %H-%M-%S") # For appending to output fi
 # is date and time + a file tag + " Inputs" or " Results".R. The defaults are set to FALSE and the user has to manually
 # specifify the file to load. This is set up so long simulation runs do not need to be repeated to generate the dcoument. 
 
-loadFileTag <- "output/15-02-21 15-20-37 v2.0 Draft" # Set to empty to run things a fresh. Manually enter file name tag to regenerate old results. 
+loadFileTag <- "output/15-03-13 13-15-17 v2.1 Draft" # Set to empty to run things a fresh. Manually enter file name tag to regenerate old results. 
                   # loadFileTag has the structure of date and time + a file tag " Input.R" and " Results.R" are appended later.
 loadVars <- TRUE # Set to FALSE to run things a fresh.
 loadResults <- TRUE # Set to FALSE to run things a fresh. If TRUE a corresponding input file needs to exist and is loaded as well.
 useSeed <- FALSE  # Use seed in loadVars file to get exactly the same results.
 
-saveFileTag <- " v2.0 Draft"  # Tag for output file names to specify scenarios
+saveFileTag <- " v2.1 Draft"  # Tag for output file names to specify scenarios
 saveVars <- FALSE       # Save input parameters so tehn can be loaded separately
 saveResults <- FALSE    # If TRUE saveVars is assumed TRUE as well. 
 
@@ -67,9 +67,9 @@ if (!loadVars || !loadResults){
   startyear <- 2011 # year ATRAS started represents year zero
   datayears <- 3 # Number of years we have data - year zero and 2 years of followup. 
   runyears <- 6  # Number of years to run the model. Short term 5 to 10.
-  numsims <- 10  # Number of sampled parameter sets to run
+  numsims <- 1000  # Number of sampled parameter sets to run
   stochastic <- TRUE # Run stochastic equations?
-  stochasticSims <- 2 # Number of sims for each parameter set if stochastic calculations are set-up
+  stochasticSims <- 20 # Number of sims for each parameter set if stochastic calculations are set-up
   
   # Generate and store a random integer for set.seed so we can rerun things exactly if we want to
   currseed <- sample(1:10^6,1)
@@ -331,7 +331,7 @@ The total cost of providing ART to people ineligible for Medicare ineligibles is
 
 #### Simulations
 
-To perform this analysis, we generated `r numsims` input parameter sets by sampling from each of the parameter ranges in Table 1. For each of these parameter sets we then ran `r stochasticSims` simulations to account for stochastic variations. Each simulation was run for `r runyears` years since the enrolment of patients into ATRAS. We then calculated summary statistics using the results from each simulation.  
+To perform this analysis, we generated `r numsims` input parameter sets by sampling from each of the parameter ranges in Table 1. For each of these parameter sets we then ran `r stochasticSims` simulations to account for stochastic variations. Each simulation was run for `r runyears-1` years since the enrolment of patients into ATRAS. We then calculated summary statistics using the results from each simulation.  
 
 ```{r functions,echo = FALSE, messages = FALSE}
 # Define two functions to calculate the incidence for a population. The second function can either be stocastic or deterministic
@@ -456,6 +456,7 @@ if (!loadResults){
   
   newinfections$lifecostatras <- newinfections$totalinfects * costlifevec    # Undiscounted
   newinfections$lifecostbase <- newinfections$totalinfectsbase * costlifevec # Undiscounted
+  newinfections$lifecostsaving <- (newinfections$totalinfectsbase - newinfections$totalinfects) * costlifevec
   
 
   # Order by simulation number
@@ -476,6 +477,7 @@ if (!loadResults){
     
     newinfections$lifecostatrasdisc[ii] <- simCostsDisc*newinfections$totalinfects[ii]
     newinfections$lifecostbasedisc[ii] <- simCostsDisc*newinfections$totalinfectsbase[ii]  
+    newinfections$lifecostsavingdisc[ii] <- simCostsDisc*(newinfections$totalinfectsbase[ii] - newinfections$totalinfects[ii])
     
   }
   
@@ -517,6 +519,10 @@ costsSum <- aggregate(totalcost ~ simulation + scenario, data=costs, FUN=sum)
 costs2 <- melt(newinfections,id.vars=c("year","simulation"),measure.vars=c("lifecostbase","sumatrascost",
               "lifecostbasedisc","sumatrascostdisc"),variable.name="scenario",value.name="totalcost")
 costsSum2 <- aggregate(totalcost ~ simulation + scenario, data=costs2, FUN=sum)
+
+costs3 <- melt(newinfections,id.vars=c("year","simulation"),measure.vars=c("costatras",
+              "lifecostsaving","costatrasdisc","lifecostsavingdisc"),variable.name="scenario",value.name="totalcost")
+costsSum3 <- aggregate(totalcost ~ simulation + scenario, data=costs3, FUN=sum)
 
 # Basic summary calculations 
 
@@ -591,7 +597,7 @@ iqrnetcostdisc <- IQR(costsSum$totalcost[costsSum$scenario == "costatrasdisc"] -
 During the first year after enrolement for ATRAS the number of new infections casued by Medicare ineligible people is estimated to be `r median(startinfects)` (IQR:`r median(startinfects)-IQR(startinfects)/2` - `r median(startinfects)+IQR(startinfects)/2`). 
 As a percentage of the infected Medicare-ineligible population, this number of new infections equates to `r round(100*median(startinfects)/median(popsizemat[,1]),1)`% of the population (Figure 1). 
 
-The impact of expanding ATRAS to all Medicare ineligbiles and achieving almost universal viral suppression is to reduce annual new infections to a median of `r median(endinfects)` (IQR:`r median(endinfects)-IQR(endinfects)/2` - `r median(endinfects)+IQR(endinfects)/2`) after 5 years (Figure 1).  Corresponding to `r round(100*median(endinfects)/median(popsizemat[,5]),)`% of the Medicare ineligible population. 
+The impact of expanding ATRAS to all Medicare ineligbiles and achieving almost universal viral suppression is to reduce annual new infections to a median of `r median(endinfects)` (IQR:`r median(endinfects)-IQR(endinfects)/2` - `r median(endinfects)+IQR(endinfects)/2`) after `r ` years (Figure 1).  Corresponding to `r round(100*median(endinfects)/median(popsizemat[,5]),)`% of the Medicare ineligible population. 
  
 ```{r plotcode, echo=FALSE,messages = FALSE,include=FALSE}
 # Create plots of results
@@ -637,14 +643,13 @@ avertplot <- avertplot + xlab("Infections averted") + ylab("Density")
 avertplot <- avertplot + opts + theme(legend.position="none")
 
 # Create a plot for total costs 
-costplot <- ggplot(data = costsSum2,aes(x=scenario,y=totalcost/1e6)) + theme_bw() + stat_summary(fun.y="median", geom="bar",
-                   aes(fill=scenario,width=0.5),alpha = 0.5)
-costplot <- costplot + scale_fill_manual(values = c(colourmap[2],colourmap[7],colourmap[2],colourmap[7]))
-costplot <- costplot + stat_summary(fun.data="median_hilow",conf.int = 0.75, geom="errorbar",width = 0.2,size=1.1)
-costplot <- costplot + xlab("") + ylab("Total cost (millions AUD)") + scale_x_discrete(labels=c("ART not \n provided","ART \n provided","ART not \n provided \n (discounted)", "ART \n provided \n (discounted)")) 
-costplot <- costplot + ylim(0,200) + geom_vline(aes(xintercept=2.5),linetype = "longdash")
-costplot <- costplot + annotate("text", x = 1.5, y = 175, label = "No discounting") + 
-            annotate("text", x = 3.5, y = 175, label = paste("Discounted ", toString(100*discRate), "%",sep = ""))
+costplot <- ggplot(data = costsSum3,aes(x=scenario,y=totalcost/1e6)) + theme_bw() + stat_summary(fun.y="median", geom="bar", aes(fill=scenario,width=0.5),alpha = 0.5)
+costplot <- costplot + scale_fill_manual(values = c(colourmap[7],colourmap[2],colourmap[7],colourmap[2]))
+costplot <- costplot + stat_summary(fun.data="median_hilow",conf.int = 0.5, geom="errorbar",width = 0.2,size=1.1)
+costplot <- costplot + xlab("") + ylab("Millions AUD") + scale_x_discrete(labels=c("Cost of \n providing \n ART","Reduction \n in lifetime \n ART costs", "Cost of \n providing \n ART \n (discounted)","Reduction \n in lifetime \n ART costs \n (discounted)")) 
+costplot <- costplot + ylim(0,120) + geom_vline(aes(xintercept=2.5),linetype = "longdash")
+costplot <- costplot + annotate("text", x = 1.5, y = 100, label = "No discounting") + 
+            annotate("text", x = 3.5, y = 100, label = paste("Discounted ", toString(100*discRate), "%",sep = ""))
 costplot <- costplot + opts + theme(legend.position="none")
 
 # Show plots in separate windows and save to file if requested
@@ -664,21 +669,21 @@ if (savePlots){dev.print(pdf,file=paste(outputFolder, "/figures/", currTime, " R
 if(knitplots){print(simsplot)}
 ```
 
-Figure 2 shows the distributions for the cumulative number of new infections in partners of Medicare ineligibles for the baseline scenario and if ART is provided to all Medicare ineligibles. Providing treatment to all Medicare ineligibles will avert a median of `r avertmed`  new infections (IQR: `r avertmed-avertiqr/2` - `r avertmed+avertiqr/2`) over `r runyears` years.
+Figure 2 shows the distributions for the cumulative number of new infections in partners of Medicare ineligibles for the baseline scenario and if ART is provided to all Medicare ineligibles. Providing treatment to all Medicare ineligibles will avert a median of `r avertmed`  new infections (IQR: `r avertmed-avertiqr/2` - `r avertmed+avertiqr/2`) over `r runyears-1` years.
 
-**Figure 2** - Total number of number of new infections (left) and the distribution in infections averted (right) over `r runyears` years after all HIV-positive people ineligible for Medicare are provided ART.
+**Figure 2** - Total number of number of new infections (left) and the distribution in infections averted (right) over `r runyears-1` years after all HIV-positive people ineligible for Medicare are provided ART.
 
 ```{r insertyplots2, echo=FALSE, messages = FALSE, warning = FALSE, fig.width=6, fig.height=3}
 if(knitplots){print(grid.arrange(totalplot,avertplot,ncol = 2))}
 ```
 
-Providing ART to Medicare ineligibles over `r runyears` years is estimated to have a median undiscounted cost of \$`r formatC(round(medacost,-4),format="d",big.mark=',')` (IQR: \$`r formatC(round(medacost -iqracost/2,4),format="d",big.mark=',')` - \$`r formatC(round(medacost + iqracost/2,4),format="d",big.mark=',')`) and a median discounted cost of \$`r formatC(round(medacostdisc,-4),format="d",big.mark=',')` (IQR: \$`r formatC(round(medacostdisc -iqracostdisc/2,4),format="d",big.mark=',')` - \$`r formatC(round(medacostdisc + iqracostdisc/2,4),format="d",big.mark=',')`). This corresponds to a cost per infection averted of 
+Providing ART to Medicare ineligibles over `r runyears-1` years is estimated to have a median undiscounted cost of \$`r formatC(round(medacost,-4),format="d",big.mark=',')` (IQR: \$`r formatC(round(medacost -iqracost/2,4),format="d",big.mark=',')` - \$`r formatC(round(medacost + iqracost/2,4),format="d",big.mark=',')`) and a median discounted cost of \$`r formatC(round(medacostdisc,-4),format="d",big.mark=',')` (IQR: \$`r formatC(round(medacostdisc -iqracostdisc/2,4),format="d",big.mark=',')` - \$`r formatC(round(medacostdisc + iqracostdisc/2,4),format="d",big.mark=',')`). This corresponds to a cost per infection averted of 
 \$`r formatC(round(medcostpiadisc,-4),format="d",big.mark=',')` (IQR: \$`r formatC(round(medcostpiadisc -iqrcostpiadisc/2,4),format="d",big.mark=',')` - \$`r formatC(round(medcostpiadisc + iqrcostpiadisc/2,4),format="d",big.mark=',')`)
 (with 5% discounting).
 
-Figure 3 shows the cumulative costs for providing ART to Medicare ineligible people for the next `r runyears` years and the resulting lifetime costs of providing treatment to the people they infected during this period. The median undiscounted cumulative cost when ART is expanded to all Medicare ineligible PLHIV is \$`r formatC(round(medtotcost,4),format="d",big.mark=',')` (IQR: \$`r formatC(round(medtotcost -iqrtotcost/2,4),format="d",big.mark=',')` - \$`r formatC(round(medtotcost + iqrtotcost/2,4),format="d",big.mark=',')`) (taking the median of the sum for each simulation). This cost is lower than the cost of providing treatment to newly infected people when ART access is denied to PLHIV who are Medicare ineligible (median \$`r formatC(round(medlbcost,4),format="d",big.mark=',')` (IQR: \$`r formatC(round(medlbcost -iqrlbcost/2,4),format="d",big.mark=',')` - \$`r formatC(round(medlbcost + iqrlbcost/2,4),format="d",big.mark=',')`); Figure 3). However, when discounting is taken into count, the long term costs reduce substantially to \$`r formatC(round(medtotcostdisc,4),format="d",big.mark=',')` (IQR: \$`r formatC(round(medtotcostdisc -iqrtotcostdisc/2,4),format="d",big.mark=',')` - \$`r formatC(round(medtotcostdisc + iqrtotcostdisc/2,4),format="d",big.mark=',')`) and the total costs for the expanded access scenario are slightly higher than the denied access scenario median \$`r formatC(round(medtotcostbasedisc,4),format="d",big.mark=',')` (IQR: \$`r formatC(round(medtotcostbasedisc -iqrtotcostbasedisc/2,4),format="d",big.mark=',')` - \$`r formatC(round(medtotcostbasedisc + iqrtotcostbasedisc/2,4),format="d",big.mark=',')`).
+Figure 3 shows the cumulative costs for providing ART to Medicare ineligible people for the next `r runyears-1` years and the savings due to the reduction in infections during this period. The median undiscounted cumulative cost when ART is expanded to all Medicare ineligible PLHIV is \$`r formatC(round(medacost,4),format="d",big.mark=',')` (IQR: \$`r formatC(round(medacost -iqracost/2,4),format="d",big.mark=',')` - \$`r formatC(round(medacost + iqracost/2,4),format="d",big.mark=',')`) (taking the median of the sum for each simulation). The resulting reduction in infections gives a median saving of \$`r formatC(round(medsaving,4),format="d",big.mark=',')` (IQR: \$`r formatC(round(medsaving - iqrsaving/2,4),format="d",big.mark=',')` - \$`r formatC(round(medsaving + iqrsaving/2,4),format="d",big.mark=',')`); Figure 3) in the lifetime treatment costs for newly infected people. When discounting is taken into account, the costs of providing ART reduce to a median \$`r formatC(round(medacostdisc,4),format="d",big.mark=',')` (IQR: \$`r formatC(round(medacostdisc -iqracostdisc/2,4),format="d",big.mark=',')` - \$`r formatC(round(medacostdisc + iqracostdisc/2,4),format="d",big.mark=',')`) and the resulting saving in treatment costs reduces to a median of \$`r formatC(round(medsavingdisc,4),format="d",big.mark=',')` (IQR: \$`r formatC(round(medsavingdisc -iqrsavingdisc/2,4),format="d",big.mark=',')` - \$`r formatC(round(medsavingdisc + iqrsavingdisc/2,4),format="d",big.mark=',')`).
 
-**Figure 3** - Median total costs for providing all Medicare ineligbles with ART and the lifetime treatment costs for partners of Medicare Ineligibles who acquire infection over `r runyears` years. The bars show the interquartile range in total costs across all simulations.
+**Figure 3** - Median total costs for providing all Medicare ineligbles with ART and the reduction in lifetime treatment costs for partners of Medicare Ineligibles who acquire infection over `r runyears-1` years. The bars show the interquartile range in total costs across all simulations.
 
 ```{r insertyplots3, echo=FALSE, messages = FALSE, warning = FALSE, fig.width=6, fig.height=3}
 if(knitplots){print(costplot)}
