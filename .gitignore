@@ -47,7 +47,6 @@ code/.RData
 .RData
 .Rhistory
 output/
-docs/manuscript/
 docs/report/
 docs/*.docx
 misc/
