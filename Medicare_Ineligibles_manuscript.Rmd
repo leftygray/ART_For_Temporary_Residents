@@ -1,0 +1,724 @@
+---
+title: "Impact of providing ART to Medicare ineligibles"
+author: "Richard T. Gray"
+date: Latest version - `r format(Sys.Date(), format="%B %d %Y")` <!---Add date automatically using R whenever markdown is run! --->
+output:
+  word_document:
+    pandoc_args: --output="docs/Medicare_Ineligibles.docx"
+    reference_docx: docs/mystyles.docx
+csl: docs/plos.csl
+bibliography: docs/medicare_ineligibles.bib
+---
+
+This document summarises a simple analysis to calculate the impact of providing anti-retroviral therapy (ART) to people living with HIV (PLHIV) in Australia who are medicare ineligible. This analysis uses data from the Australian HIV Observational Database Temporary Residents Access Study (ATRAS) [@petoumenos2013australian].The R code for these calculations is available in the associated Rmarkdown file. The aim of these calculations is to estimate the number of new HIV infections that occur through transmission from Medicare ineligible people to their sexual partners, the cost of providing ART to the Medicare ineligible population, and the potential future cost of providing treatment to partners of Medicare ineligibles who become infected. <!--- This is version v2.0 of the calculations and document. Previous versions are available in a corresponding git repository --->
+
+This document is written in dynamic format using R markdown v2 within R studio 0.98.1056 (using R version 3.1.2). Plots are created using the package ggplot2. Further details are available in the associated R markdown file which also contains the R code to produce all the results when the markdown is run. Code blocks have been supressed in the output document. <!--- The document was currently produced using R markdown v2 within Rstudio using `r substr(R.Version()$version.string,1,15)`, knitr, pandoc, and Miktex (for Latex) for producing the associated PDF or Word Document output. The analysis uses the R packages ggplot2, reshape, gridExtra. To update the results the markdown file needs to be loaded in Rstudio or run using the tools separately. ---> 
+
+```{r initialization,echo = FALSE,messages = FALSE,include=FALSE}
+# Clear workspace
+rm(list=ls()) 
+options(scipen=999)  # To get rid of scientific notation
+
+# Load libraries use in the analysis.
+require(ggplot2)
+require(reshape2)
+require(gridExtra)
+require(Hmisc)
+
+# Before we get started set some overarching variables so we can rerun results instead of generating new ones if necessary. Store outputs 
+# and initialize other script wide varuables.
+outputFolder <- "output"
+docFolder <- "docs"
+currTime <- format(Sys.time(), "%y-%m-%d %H-%M-%S") # For appending to output files
+
+# Specifications for loading previously generated results or saving results to file. The basic format of a file string 
+# is date and time + a file tag + " Inputs" or " Results".R. The defaults are set to FALSE and the user has to manually
+# specifify the file to load. This is set up so long simulation runs do not need to be repeated to generate the dcoument. 
+
+loadFileTag <- "output/15-03-13 13-15-17 v2.1 Draft" # Set to empty to run things a fresh. Manually enter file name tag to regenerate old results. 
+                  # loadFileTag has the structure of date and time + a file tag " Input.R" and " Results.R" are appended later.
+loadVars <- TRUE # Set to FALSE to run things a fresh.
+loadResults <- TRUE # Set to FALSE to run things a fresh. If TRUE a corresponding input file needs to exist and is loaded as well.
+useSeed <- FALSE  # Use seed in loadVars file to get exactly the same results.
+
+saveFileTag <- " v2.1 Draft"  # Tag for output file names to specify scenarios
+saveVars <- FALSE       # Save input parameters so tehn can be loaded separately
+saveResults <- FALSE    # If TRUE saveVars is assumed TRUE as well. 
+
+# Check if output directories exist and create if necessary
+if (!file.exists(outputFolder)){dir.create(file.path("./",outputFolder))}
+if (!file.exists(docFolder)){dir.create(file.path("./",docFolder))}
+
+# Produce plots in windows for viewing separately and save plots separately.
+showPlots <- TRUE   # Show plots in separate windows
+savePlots <- TRUE  # Save plots to file
+knitplots <- TRUE  # Insert plots in the produced Rmarkdown document
+
+```
+
+### Methodogy 
+
+This section summarises the methodology used for the calculations. A simple mathematical model is used to caluclate the change in population size over time and the number of new infections in partners of medicare ineligible people. Model details, assumptions and input parameters are described below.
+
+```{r SimVariables,echo=FALSE}
+if (!loadVars || !loadResults){
+  # If not loading from previously created file specifiy inputs
+  # Initialize parameters for running calculations
+  startyear <- 2011 # year ATRAS started represents year zero
+  datayears <- 3 # Number of years we have data - year zero and 2 years of followup. 
+  runyears <- 6  # Number of years to run the model. Short term 5 to 10.
+  numsims <- 1000  # Number of sampled parameter sets to run
+  stochastic <- TRUE # Run stochastic equations?
+  stochasticSims <- 20 # Number of sims for each parameter set if stochastic calculations are set-up
+  
+  # Generate and store a random integer for set.seed so we can rerun things exactly if we want to
+  currseed <- sample(1:10^6,1)
+  set.seed(currseed)
+  
+} else {
+  # Save current values of some params as they will be replaced
+  oldloadFileTag <- loadFileTag; oldloadVars <- loadVars; oldloadResults <- loadResults; olduseSeed <- useSeed
+  oldsaveFileTag <- saveFileTag; oldsaveVars <- saveVars; oldsaveResults <- saveResults; oldshowPlots <- showPlots
+  oldsavePlots <- savePlots; oldknitplots  <- knitplots
+  
+  # Load the file with the saved input parameters
+  load(paste(loadFileTag," Inputs.R",sep=""))
+       
+  # Overwite the input file script variables with their current values. 
+  loadFileTag <- oldloadFileTag; loadVars <- oldloadVars; loadResults <- oldloadResults; useSeed <- olduseSeed
+  saveFileTag <- oldsaveFileTag; saveVars <- oldsaveVars; saveResults <- oldsaveResults; showPlots <- oldshowPlots
+  savePlots <- oldsavePlots; knitplots  <- oldknitplots
+}
+```
+
+#### Demographics
+
+For this analysis we consider a population of PLHIV who are medicare ineligible with the characteristics of people in ATRAS [@petoumenos2013australian]. The overall population is split into  males who are men who have sex with men (MSM) (which, for the purposes of this analysis, we assume are exclusively homosexual) and all those who are not MSM. The proportion of people in each of these populations is based on ATRAS data and assumed to be constant over time. This comparmentalisation of the population is used to distinguish the risk of HIV infection rather than treatment coverage and adherence.
+
+The number of medicare ineligibles can change over time with people becoming eligible for medicare provided ART and new temporary residents entering the population. This movement is represented by a constant growth rate for the population $\pi$ (which is positive for a growing population and negative for a declining population). <!--- In ATRAS aproximately 20% of people become medicare eligible and leave the population each year, this would be lower bound on the rate of population change ---> Letting $N(y)$ equal the total population size in year $y$, the number of medicare ineligible people in the population is then given by
+$$N(y) = N(0)\pi^y.$$ For this analysis we assume only a small change in the population over time so the overall population size is relatively constant.
+
+#### Clinical characteristics
+
+The main aim of this analysis is to investigate the effect of providing all Medicare ineligible people in ATRAS with ART on HIV transmission. For the calculations we simply consider the proportion of the population taking ART and the proportion of those on ART with viral suppression. Both of these inputs can change over time based on the ATRAS data. We do not consider different proportions for each population group. The most recent data value is used for projections beyond the years of available data. 
+
+#### HIV transmission to partners
+
+HIV transmission occurs through sexual intercourse between medicare ineligibles and their sexual partners. We assume all partners are Medicare eligible and initiating ART does not change the risk of transmission to partners (through changes in behaviour for example). We also do not consider onward transmission from newly infected partners. As the sexual behaviour for the ART and non-ART population is the same, we use a simple risk equation approach with the overall annual risk of transmission calculated from national data rather than incorporating complex sexual behaviour. 
+
+
+```{r betafunction,echo = FALSE, messages = FALSE}
+# Define a function to calculate beta given an incidcence estimate, PLHIV, proportion on ART, and proportion with viral suppression.
+beta <- function(incidence,numInfected,propart,propvs,effart){
+  return(incidence/((1-propart*propvs*effart)*numInfected))
+}
+```
+
+Key assumptions:
+
+* HIV transmission from Medicare ineligibles who are not on ART is the same as for the Australian population of PLHIV not on ART.
+* Partners of HIV positive people who are ineligible for Medicare are assumed to be Medicare eligible.
+* Those with unsuppressed virus have the same transmission risk as those not taking ART.
+* Transmission parameters are assumed constant over time.
+
+#### Costs associated with ART provision
+
+Our analysis includes an estimate of the annual cost of providing ART to Medicare ineligibles and their partners who become infected. We obtained estimates of the costs of providing treatment using previous work for Australian settings [@schneider2014cost]. For sexual partners of Medicare ineligibles who become infected with HIV we estimate the 'lifetime' cost of providing and treatment. 
+
+#### Parameter table
+Table 1 lists all input parameters and their values and ranges.
+
+```{r inputParameters,echo=FALSE}
+# If not loading from previously created file specifiy inputs
+if (!loadVars && !loadResults){
+  # R code to define parameters for simulations. These are defined as uniform ranges [minimum, maximum]
+  # Next version may read this is from an external file. Samples are randomly obtained from these ranges and put into
+  # matrices to aid vectorised calculations
+  
+  # Demographics
+  popsize <- c(400,500);   
+  pop_growth <- c(0.98,1.02); # Overall relative change in population size
+  prop_m <- c(0.4,0.6);    # Proportion MSM
+  # Proportion non-MSM is calculated internally so that the proportions add up to 1.
+   
+  # Clinical parameters
+  # As these values can change of time we use hardcoded data values from ATRAS to track their change over time. 
+  # Uncertainty or variation in these values is assumed to be the same over time and have the same relative factor.
+  # Next version may read this is from an external file.
+   
+  prop_art_base <- c(0.63, 0.95,0.95) # Hard coded - National c(0.66, 0.66, 0.66) 
+  prop_vs_base <- c(0.7,0.88,0.96) # Hard coded - National c(0.93,0.93,0.93)
+  
+  prop_art_factor <- c(0.95, 1.05) # Uncertainty in proportion not on ART so we don't get a proportion greater than 1 
+  prop_vs_factor <- c(0.95, 1.05)  # Uncertainty in proportion not on ART so we don't get a proportion greater than 1 
+
+
+  # HIV transmission parameters
+  # Assumed to remain constant over time
+  
+  # First off we calculate a beta transmission value using inputs from the overall Australian population. Estimates are from James's
+  # back projection paper and David's treatment cascade calculations
+  numPLHIV <- 26640      # James's backprojection paper
+  numInfects <- 912      # James's backprojection paper
+  propMSM <- 0.75        # ASR
+  propMSMart <- 0.78     # Gay periodic surveys across Australia
+  propMSMvs <- 0.9       # Gay periodic surveys across Australia
+  propOtherart <- 0.55   # David's HIV cascade calculations based on prospection data
+  propOthervs <- 0.9     # Assumed same for Gay periodics in line with AHOD data
+  effart <- 0.95 # Efficay of ART for calculations (midway between epsilon_art we use for other calculations)
+  
+  betan <- beta(numInfects*(1-propMSM),numPLHIV*(1-propMSM),propOtherart,propOthervs,effart)
+  betanRange <- c(0.75*betan,1.25*betan)
+  betam <- beta(numInfects*propMSM,numPLHIV*propMSM,propMSMart,propMSMvs,effart)
+  betamRange <- c(0.75*betam,1.25*betam)
+  
+  # Reduction in HIV infectiouness due to viral suppression
+  epsilon_art <- c(0.9,0.99)   
+  
+  # ART costs 
+  
+  artcost <- c(7000,15000) # For Medicare ineligibles. Assumed everyone is on first line ART
+  
+  # Calculation of lifetime cost of providing ART to those who become infected
+  
+  # Average time of spending in each ART class assuming ~40 years of treatment from James's paper (median results rounded up)
+  yearsFirst <- 9
+  yearsSecond <- 14
+  yearsThird <- 3
+  totalLifeYears <- 40
+  yearsFourth <- totalLifeYears-(yearsFirst+yearsSecond+yearsThird) #Assume 40 years of ART use until death as the median age of ATRAS cohort is ~35
+  
+  # From Karen's Prep paper. Cost is Australian dollars
+  costFirst <- 10685
+  costSecond <- 19364
+  costThird <- 31411
+  costFourth <- 28162
+  costUncertainty <- 0.25
+  
+  # Total cost for lifetime of treatment no discounting
+  lifecostYearly <- rep(costFourth,totalLifeYears)
+  lifecostYearly[1:yearsFirst] <- costFirst
+  lifecostYearly[(yearsFirst+1):(yearsFirst+yearsSecond)] <- costSecond
+  lifecostYearly[(yearsFirst+yearsSecond+1):(yearsFirst+yearsSecond+yearsThird)] <- costThird
+  
+  lifecost <- sum(lifecostYearly)
+  lifecostRange <- c((1-costUncertainty)*lifecost,(1+costUncertainty)*lifecost) # Undiscounted lifetime cost of ART uncertainty
+  
+  # Discounting rate
+  discRate <- 0.05      # Discounting rate
+  timeTreat <- c(4,5)   # Time between infection and treatment where discounting would occur. 
+  
+  # Weighted total cost for lifetime treatment with discounting. More complicated equation as it depends on the year so is defined below
+  
+  
+  # Save all the internal variables and parameter values 
+  if (saveVars || saveResults){
+    save(list = ls(all = TRUE), file = paste(outputFolder, "/", currTime, saveFileTag, " Inputs.R", sep =""))
+  }
+}
+```
+
+
+**Table 1** - Calculation input parameter ranges. Justifications for these parameter ranges are provided in endnotes. The simulations used for the calculations take samples from these ranges assuming a uniform distribution. 
+
+Parameter           | Description                | Range                                        | Reference                
+--------------------|----------------------------|----------------------------------------------|------------------------   
+**Demographic parameters** | | |  
+$N(0)$ | Overall population size in initial year |  [`r popsize[1]` - `r popsize[2]`] | 1  
+$\pi$ | Multiplicative change in annual population | [`r pop_growth[1]` - `r pop_growth[2]`]/yr | 1     
+$p_m$ | Proportion of Medicare-ineligible population of PLHIV who are MSM | [`r prop_m[1]` - `r prop_m[2]`] | 1   
+$p_n$ | Proportion of Medicare-ineligible population of PLHIV who are non-MSM | Given by $1-p_m$ | 1  
+**Clinical parameters** | | |   
+$\theta$ | Proportion of population taking ART | 63% at enrolment and 95% after 12 months $\pm$ 5% | 2  
+$\psi$ | Proportion of population taking ART with undetectable viral load | 70% at enrolement, 88% after 12 months, and 96% after 24 months $\pm$ 5%    | 2  
+**HIV transmission parameters** | | |   
+$\beta_n$ | Annual probability an untreated non-MSM transmists HIV to another person |  [`r round(betanRange[1],4)` - `r round(betanRange[2],4)`] | 3    
+$\beta_m$ | Annual probability an untreated MSM transmists HIV to another person |  [`r round(betamRange[1],4)` - `r round(betanRange[2],4)`] |  3  
+$\epsilon_{ART}$ | Efficacy of ART in preventing HIV transmission if virus is suppressed | [`r epsilon_art[1]` - `r epsilon_art[2]`] | 4   
+**Treatment costs** | | |  
+$c_{ART}$ | Average annual undiscounted cost of providing ART to Medicare ineligbles | [\$`r formatC(artcost[1],format="d",big.mark=',')` - \$`r formatC(artcost[2],format="d",big.mark=',')`] | 5   
+$c_{life}$ | Average undiscounted lifetime cost of providing ART post infection | [\$`r formatC(lifecostRange[1],format="d",big.mark=',')` - \$`r formatC(lifecostRange[2],format="d",big.mark=',')`] | 6   
+$r_{disc}$ | Discounting rate | `r 100*discRate`% | 7  
+$t_{ART}$ | Average time between infection and initiating ART | [`r timeTreat[1]` - `r timeTreat[2]`] years | 7 
+
+   
+1. The 2013 ATRAS report <!--- data for 2011-12 when ATRAS started. Up to 460 in 2014 ---> estimates there are 450 Medicare ineligible PLHIV in Australia [@petoumenos2013australian]. We assume a range in the population between 400 and 500 PLHIV with the potential for only a small change in population size over time. In the population of 180 at enrolmentm 89 (50%) of the males attributing their HIV infection to MSM exposure [@petoumenos2013australian]. Assuming this reflects the demographic distribution over time, we assume 40-60% of the population is MSM with the remainder non-MSM.  
+
+2. At enrolment 62.8% of ATRAS patients were already receiving ART with 71.8% having undetectable viral load [@petoumenos2013australian]. After  enrolment all patients were put onto ART resulting in 87% having undetectable viral load at 12 months and 96% having undetectable viral load at 24 months [@petoumenos2013australian]. Based on the ATRAS data we assume the percenatge of Medicare ineligibles on ART increases from 70% to 95% with a range of $\pm$ 5% with the proportion with undetecvtable virus increasing from 70% to 96% over two years with a range of $\pm$ 5%.  
+
+3. These values are calculated using data for the overall population of PLHIV in Australia. Using the equation $I = N(1-\theta)\beta + N\theta(1-\psi)\beta + N\theta\psi(1-\epsilon_{ART})\beta = N\beta(1-\theta\psi\epsilon_{ART})$ where $I$ is the overall incidence in Australian MSM and non-MSM, $N$ is the overall number of PLHIV in Australia who are MSM and non-MSM, and the remaining parmaters have the same meaning as in Table 1 we can estimate the value of $\beta$ for MSM and non-MSM. In 2013 there were an estimated 26,640 PLHIV in Australia and 912 new infections [@jamespaper] of which around 75% are attributed to homosexual contact [@asr2014report]. According to recent estimates for the HIV treatment cascade in Australia around 75% of MSM living with HIV [@gcps2014report] and 55% of non-MSM living with HIV are taking ART [@jwilsoncascade], respectively.  In both MSM and non-MSM taking ART, around 90% have an undetectable viral load [@gcps2014report; @ahod2014report]. Putting these values into the equation above and assuming $\pm$ 25% uncertainty produces the values of $\beta_n$ and $\beta_m$.   
+
+4. We assume those with viral suppression have a 96% reduction in transmission to their sexual partners in line with the results from the HPTN-052 trial for those with detectable drug [@cohen2011prevention].   
+
+5.At enrolement 83% of the ATRAS cohort on ART were taking Tenofovir/Emtrcitabine (Truvada) as the 'backbone' of their regime. This means the vast majority of those on treatment are taking first-line drugs. For this analysis we assume all patients are on and remain on first-line ART over the period of analysis. From Scheider et. al. the average annual cost of first-line drugs is $10,685 ($6,945-$14,424) [@schneider2014cost]. Using this value we assume a range in the annual ART cost of \$`r formatC(artcost[1],format="d",big.mark=',')` to \$`r formatC(artcost[2],format="d",big.mark=',')`.
+
+6. If a partner of a Medicare ineligible becomes infected with HIV then they will eventually require care and treatment while they are living in Australia. As we are not tracking their infection progression in this analysis we use an estimate for the lifetime cost of providing ART. An analysis of the life expectancy of PLHIV in Australia given currently available antiretroviral treatments suggests someone starting treatment in their twenties will be taking ART for around 40 years [@jansson2013currently] spendng ~`r yearsFirst` years on first-line drugs,  ~`r yearsSecond` years on second-line drugs, ~`r yearsThird` years on third-line drugs, and the reminder of the time on higher classes of drug. Using the cost estimates from [@schneider2014cost], we assume the annual costs of proving each line of drugs is: \$`r costFirst` for first-line drugs, \$`r costFirst` for second-line drugs, \$`r costFirst` for third-line drugs, and \$`r costFirst` for fourth and higher lines of drugs. Mutiplying the values for each drug class and summing produces the undiscounted cost presented here. To account for all uncertianties in time on each treatment class and drug costs we assume a range of $\pm$ 25% in the overall undiscounted cost. 
+
+7. To discount future costs of providing ART to people ineligible for Medicare and those who become infected we apply a discount rate of 5% from the year of enrolement in ATRAS for all treatment costs. For discounting pruposes we include the time between infection and initiating ART, this is estimated from data on the CD4 count at initiating therapy and estimates for the rate of CD4 decline. In recent years participants in the AHOD cohort have initiated ART at around 350 cells/$\mu$L [@ahod2014report], it is estimated it takes 4.4 years for a person to reach this CD4 count post infection [@jamespaper]. We therefore assume a range of 4 to 5 years for the time between infection and ART initiation. 
+
+
+```{r vectoriseParams, echo = FALSE,  messages = FALSE}
+
+
+# Convert parameters to vectors and matrices for running in the calculations. Constants are stored as vectors and time varying 
+# parameters are stored as matrices. Each vector element or matrix row represents a specific sampling from the input parmater ranges. 
+
+if (useSeed){
+  set.seed(currseed)
+} else {
+  set.seed(NULL)
+}
+
+# Demograhic parameters - Population size calulated by combining the initial population size and growth rate. As it is time varying 
+# population size is stored as a matrix
+popsizemat <- matrix(0,numsims,runyears)
+for (ii in 1:numsims){
+  popsizemat[ii,] <- runif(1,popsize[1],popsize[2]) * runif(1,pop_growth[1],pop_growth[2])^c(1:runyears)
+}
+
+prop_mvec <- runif(numsims,prop_m[1],prop_m[2])
+prop_nvec <- 1-prop_mvec
+
+# Clinical parameters (matrices). This is done by first converting proportions on ART and with viral suppression to vectors of 
+# equal length to number of simulation years and then inverting twice so the uncertianty factor does not produce a value great than 1. 
+# If the number of simulations years is greater than the number of data values the final data value is assumed to remain constant.
+
+prop_art_baseVec <- prop_art_base[length(prop_art_base)] * rep(1,runyears)
+prop_art_baseVec[1:length(prop_art_base)] <- prop_art_base  # Replace start of vector with data values
+
+prop_vs_baseVec <- prop_vs_base[length(prop_vs_base)] * rep(1,runyears)
+prop_vs_baseVec[1:length(prop_vs_base)] <- prop_vs_base  # Replace start of vector with data values
+
+
+# Now create matrix of values by looping over number of simulations
+prop_art_basemat <- matrix(0,numsims,runyears)
+prop_vs_basemat <- matrix(0,numsims,runyears)
+for (ii in 1:numsims) {
+   # Sample from multiplicative factor
+  tempFactor_art <- runif(1,prop_art_factor[1],prop_art_factor[2]) 
+  tempFactor_vs <- runif(1,prop_vs_factor[1],prop_vs_factor[2])
+#   
+  # Do double inversion and store in the row
+  prop_art_basemat[ii,] <- 1-tempFactor_art * (1-prop_art_baseVec)
+  prop_vs_basemat[ii,] <- 1-tempFactor_vs * (1-prop_vs_baseVec)
+}
+
+# Transmission parameters (vectors)
+betanvec <- runif(numsims,betanRange[1],betanRange[2])
+betamvec <- runif(numsims,betamRange[1],betamRange[2])
+
+epsilon_artvec <- runif(numsims,epsilon_art[1],epsilon_art[2])
+
+# Cost parameters
+costartvec <-  runif(numsims,artcost[1],artcost[2])
+costlifevec <- runif(numsims,lifecostRange[1],lifecostRange[2])
+costUncertainvec <- runif(numsims,1-costUncertainty,1+costUncertainty)
+timeTreatVec <- runif(numsims,timeTreat[1],timeTreat[2])
+
+````
+
+#### Calculations for number of new infections caused by people ineligible for Medicare
+
+We use simple risk-equation calculations to estimate the number of people who become infected through partnerships with HIV-positive people ineligible for Medicare. Details of the calculations are provided in the appendix.
+
+The total number of new infections is given by the sum of the infections caused by Medicare-ineligible MSM and non-MSM each year. For each population, we first calculate the probabilty of infecting another person using an equation incorporating the level of ART use and viral suppression. The proportion of the population taking ART and with suppressed virus changes overtime matching the ATRAS data in Table 1. 
+
+Using this probability, we estimate the number of new infections caused by MSM and non-MSM Medicare-ineligibles each year through sampling from a binomial distribution. <!--- In the Rmarkdown script there is an option to use the risk equation approach instead of the sampling from a binomial distribution. Given the relatively small population size and the high levels of ART coverage and viral suppression, only a small number of new infections are likely and we use the stochastic approach in this anaylsis. ---> Adding the population terms together gives the overall number of new infections caused by Medicare-ineligibles in a given year and cumulatively over time. 
+
+#### Cost calculations
+
+The total cost of providing ART to people ineligible for Medicare ineligibles is calculated by mutliplying the annual number of people ineligible for Medicare infected with HIV by the annual cost of providing ART and summing over the period of analysis. For sexual partners of Medicare-ineligibles who become infected with HIV we calculate the cost per infection averted and overall future lifetime cost of providing care and treatment to these people by multiplying the cumulative number of people who acquire infection by the undicsounted (reported in Table 1) lifetime cost and the discounted lifetime cost. 
+
+#### Simulations
+
+To perform this analysis, we generated `r numsims` input parameter sets by sampling from each of the parameter ranges in Table 1. For each of these parameter sets we then ran `r stochasticSims` simulations to account for stochastic variations. Each simulation was run for `r runyears-1` years since the enrolment of patients into ATRAS. We then calculated summary statistics using the results from each simulation.  
+
+```{r functions,echo = FALSE, messages = FALSE}
+# Define two functions to calculate the incidence for a population. The second function can either be stocastic or deterministic
+infect_prob <- function(propart,propvs,effart,beta){
+  return((1-propart*propvs*effart)*beta)
+}
+
+popinfects <- function(popsize,prob,stochastic = FALSE){
+  if (!stochastic){
+    return(popsize *prob)
+  } else {
+    return(rbinom(length(prob),round(popsize),prob))
+  }
+}  
+
+discountcosts <-function(yearlyCosts,discRate,startYear,delay){
+  # This function calculates the discounted lifetime costs for someone who becomes infected given
+  # a vector of estimated annual costs for treatment over time (yearlsCosts), the discount rate, the year
+  # since the start simulation when someone becomes infected (to account for discounting before they become infected),
+  # and any delay from infection to starting treatment (to account for discounting before they start treatment).
+  # The function returns the sum of the discounted annual costs
+  
+  discountVec <- 1/(1+discRate)^(c(0:(length(yearlyCosts)-1))+startYear+delay) # No discounting for year zero
+  yearlyDiscountCosts <- yearlyCosts*discountVec
+  return(sum(yearlyDiscountCosts))
+}
+```
+
+```{r calculations, echo=FALSE, messages = FALSE, include = FALSE}
+if (!loadResults){
+  # We are now ready to run the code that actually does the calculations for each simulation. This involves looping through each parameter
+  # set and calculating the incidence for each population using the current data and the counterfactual levels. <- Using the sampled and
+  # best fitting estimates and just the median of all values?? -->
+  
+  # Determine how many runs to do for each parameter set
+  if (stochastic){
+    numruns <- stochasticSims
+  } else {
+    numruns <- 1
+  }
+  
+  # Initialize output arrays
+  paramSet <- vector()
+  
+  # For ATRAS simulations
+  infectsm <- matrix(0,numsims*numruns,runyears)
+  infectsn <- matrix(0,numsims*numruns,runyears)
+  costAtras <- matrix(0,numsims*numruns,runyears)
+  discountAtras <- matrix(0,numsims*numruns,runyears)
+  
+  # For baseline simulations
+  infectsmBase <- matrix(0,numsims*numruns,runyears)
+  infectsnBase <- matrix(0,numsims*numruns,runyears)
+  
+  # Discount rate vector
+  discountVec <- 1/(1+discRate)^c(0:(runyears-1)) # No discounting for year zero
+  
+  # Do the calculations
+  for (ii in 1:numsims){
+  
+    for (jj in 1:numruns){
+      # Row index for storage in output matrices
+      vecIndex <- (ii-1)*numruns + jj
+      
+      # Store parameter set index
+      paramSet <- c(paramSet,ii*matrix(1,runyears,1))
+          
+      # Infections casued by MSM - ATRAS
+      infectsm[vecIndex,] <- popinfects(popsizemat[ii,]*prop_mvec[ii],infect_prob(prop_art_basemat[ii,],prop_vs_basemat[ii,],
+                                        epsilon_artvec[ii],betamvec[ii]),stochastic)
+    
+      # Infections casued by MSM - Baseline
+      infectsmBase[vecIndex,] <- popinfects(popsizemat[ii,]*prop_mvec[ii],rep(infect_prob(prop_art_basemat[ii,1],prop_vs_basemat[ii,1],
+                                            epsilon_artvec[ii],betamvec[ii]),runyears),stochastic)
+      
+      # Infections caused by GBM - ATRAS
+      infectsn[vecIndex,] <- popinfects(popsizemat[ii,]*(1-prop_mvec[ii]),infect_prob(prop_art_basemat[ii,],prop_vs_basemat[ii,],
+                                        epsilon_artvec[ii],betanvec[ii]),stochastic)
+      
+      # Infections caused by GBM - BAseline
+      infectsnBase[vecIndex,] <- popinfects(popsizemat[ii,]*(1-prop_mvec[ii]),rep(infect_prob(prop_art_basemat[ii,1],
+                                            prop_vs_basemat[ii,1],epsilon_artvec[ii],betanvec[ii]),runyears),stochastic)
+      
+      # Cost of providing ART - undiscounted
+      costAtras[vecIndex,] <- popsizemat[ii,]*costartvec[ii]
+      
+      # Cost of providing ART - discounted
+      discountAtras[vecIndex,] <- popsizemat[ii,]*costartvec[ii]*discountVec
+    }
+  }
+
+  paramSet <- t(paramSet) # Transpose to align with rows of the output matrices
+  
+  # Reshape the simulation output into a dataframe so it is easier for analysis and plotting. 
+  msmInfects <- melt(t(infectsm)); msmInfects <-msmInfects[c(2,1,3)]; colnames(msmInfects) <- c("simulation","year","infectsbymsm")
+  nonmsmInfects <- melt(t(infectsn)); nonmsmInfects <- nonmsmInfects[c(2,1,3)]; colnames(nonmsmInfects) <- 
+    c("simulation","year","infectsbynonmsm") 
+  
+  msmInfectsBase <- melt(t(infectsmBase)); msmInfectsBase <-msmInfectsBase[c(2,1,3)]; colnames(msmInfectsBase) <- c("simulation","year","infectsbymsmbase")
+  nonmsmInfectsBase <- melt(t(infectsnBase)); nonmsmInfectsBase <- nonmsmInfectsBase[c(2,1,3)]; colnames(nonmsmInfectsBase) <- 
+    c("simulation","year","infectsbynonmsmbase") 
+  
+  costAtrasVec <- melt(t(costAtras)); costAtrasVec <- costAtrasVec[c(2,1,3)]; colnames(costAtrasVec) <- c("simulation","year","costatras")
+  discountAtrasVec <- melt(t(discountAtras)); discountAtrasVec <- discountAtrasVec[c(2,1,3)]; colnames(discountAtrasVec) <- c("simulation","year","costatrasdisc")
+  
+  # Merge the results we want into one data frame, order simulations and append parameterset number. Each observation represents a 
+  # single calculation of incidence
+  newinfections <- merge(msmInfects,nonmsmInfects,all=TRUE)
+  newinfections$totalinfects <- newinfections$infectsbymsm + newinfections$infectsbynonmsm
+  
+  # Baseline results
+  newinfections <- merge(newinfections,msmInfectsBase,all=TRUE)
+  newinfections <- merge(newinfections,nonmsmInfectsBase,all=TRUE)
+  newinfections$totalinfectsbase <- newinfections$infectsbymsmbase + newinfections$infectsbynonmsmbase
+  
+  # Averted infections
+  newinfections$infectsaverted <- (newinfections$totalinfectsbase - newinfections$totalinfects)
+  
+  # Undiscounted Costs
+  newinfections <- merge(newinfections,costAtrasVec,all=TRUE)
+  newinfections <- merge(newinfections,discountAtrasVec,all=TRUE)
+  
+  newinfections$lifecostatras <- newinfections$totalinfects * costlifevec    # Undiscounted
+  newinfections$lifecostbase <- newinfections$totalinfectsbase * costlifevec # Undiscounted
+  newinfections$lifecostsaving <- (newinfections$totalinfectsbase - newinfections$totalinfects) * costlifevec
+  
+
+  # Order by simulation number
+  newinfections <- newinfections[order(newinfections$simulation),]
+  
+  # Add parameterset number and reorder to put in first column
+  newinfections$paramset <- t(paramSet)
+  newinfections <- newinfections[,c(ncol(newinfections),1:(ncol(newinfections)-1))] 
+  
+  # Subtract a year from year column to start things at year zero
+  newinfections$year <- newinfections$year - 1
+  
+  # Discounted costs - Need to loop through each line of newinfections to account for the different startyears
+  for (ii in 1:nrow(newinfections)){
+    
+    simCostsDisc <-sum(discountcosts(lifecostYearly*costUncertainvec[newinfections$paramset[ii]], discRate,
+                                                    newinfections$year[ii], timeTreatVec[newinfections$paramset[ii]]))
+    
+    newinfections$lifecostatrasdisc[ii] <- simCostsDisc*newinfections$totalinfects[ii]
+    newinfections$lifecostbasedisc[ii] <- simCostsDisc*newinfections$totalinfectsbase[ii]  
+    newinfections$lifecostsavingdisc[ii] <- simCostsDisc*(newinfections$totalinfectsbase[ii] - newinfections$totalinfects[ii])
+    
+  }
+  
+  # Summed costs
+  newinfections$sumatrascost <- newinfections$costatras + newinfections$lifecostatras
+  newinfections$sumatrascostdisc <- newinfections$costatrasdisc + newinfections$lifecostatrasdisc
+  
+  
+  # Write results to file
+  # Save all the internal variables and parameter values 
+  if (saveResults){
+      save(newinfections, file = paste(outputFolder, "/", currTime, saveFileTag, " Results.R", sep =""))
+      write.csv(newinfections, file = paste(outputFolder, "/", currTime, saveFileTag, " Results.csv", sep =""))
+    }
+} else {
+  # Load previously generated results
+  load(paste(loadFileTag," Results.R",sep=""))
+}
+
+```
+
+### Results
+
+<!--- This section contains code converting the calculation results into figures and summary statistics. Results are then written up using
+the calculated values-->
+
+```{r analysis, echo=FALSE,messages = FALSE,include=FALSE}
+# Do some data manipulation for producing the cumulative number of infections and infections averted.
+infects <- melt(newinfections,id.vars=c("year","simulation"),measure.vars=c("totalinfectsbase","totalinfects"),variable.name="scenario",value.name="newinfections")
+infectsSum <- aggregate(newinfections ~ simulation + scenario, data=infects, FUN=sum)
+
+avertedinfects <- melt(newinfections,id.vars=c("year","simulation"),measure.vars=c("infectsaverted"),variable.name="scenario",value.name="totalaverted")
+avertedSum <- aggregate(totalaverted ~ simulation + scenario, data=avertedinfects, FUN=sum)
+
+costs <- melt(newinfections,id.vars=c("year","simulation"),measure.vars=c("costatras","costatrasdisc","lifecostbase","lifecostatras",
+              "lifecostbasedisc","lifecostatrasdisc"),variable.name="scenario",value.name="totalcost")
+costsSum <- aggregate(totalcost ~ simulation + scenario, data=costs, FUN=sum)
+
+costs2 <- melt(newinfections,id.vars=c("year","simulation"),measure.vars=c("lifecostbase","sumatrascost",
+              "lifecostbasedisc","sumatrascostdisc"),variable.name="scenario",value.name="totalcost")
+costsSum2 <- aggregate(totalcost ~ simulation + scenario, data=costs2, FUN=sum)
+
+costs3 <- melt(newinfections,id.vars=c("year","simulation"),measure.vars=c("costatras",
+              "lifecostsaving","costatrasdisc","lifecostsavingdisc"),variable.name="scenario",value.name="totalcost")
+costsSum3 <- aggregate(totalcost ~ simulation + scenario, data=costs3, FUN=sum)
+
+# Basic summary calculations 
+
+# Median number of infections at enrolment and after 5 years.
+startinfects <- newinfections$totalinfects[newinfections$year == 0]
+endinfects <- newinfections$totalinfects[newinfections$year == 5]
+startinfectsbase <- newinfections$totalinfectsbase[newinfections$year == 0]
+endinfectsbase <- newinfections$totalinfectsbase[newinfections$year == 5]
+
+# Median infections averted
+avertmed <- median(avertedSum$totalaverted)
+avertiqr <- IQR(avertedSum$totalaverted)
+
+# Costs
+medacost <- median(costsSum$totalcost[costsSum$scenario == "costatras"])
+iqracost <- IQR(costsSum$totalcost[costsSum$scenario == "costatras"])
+medacostdisc <- median(costsSum$totalcost[costsSum$scenario == "costatrasdisc"])
+iqracostdisc <- IQR(costsSum$totalcost[costsSum$scenario == "costatrasdisc"])
+medlbcost <- median(costsSum$totalcost[costsSum$scenario == "lifecostbase"])
+iqrlbcost <- IQR(costsSum$totalcost[costsSum$scenario == "lifecostbase"])
+medlacost <- median(costsSum$totalcost[costsSum$scenario == "lifecostatras"])
+iqrlacost <- IQR(costsSum$totalcost[costsSum$scenario == "lifecostatras"])
+
+medtotcost <- median(costsSum$totalcost[costsSum$scenario == "costatras"] + costsSum$totalcost[costsSum$scenario == "lifecostatras"])
+iqrtotcost <- IQR(costsSum$totalcost[costsSum$scenario == "costatras"] + costsSum$totalcost[costsSum$scenario == "lifecostatras"])
+
+medtotcostdisc<- median(costsSum$totalcost[costsSum$scenario == "costatrasdisc"] + costsSum$totalcost[costsSum$scenario == "lifecostatrasdisc"])
+iqrtotcostdisc <- IQR(costsSum$totalcost[costsSum$scenario == "costatrasdisc"] + costsSum$totalcost[costsSum$scenario == "lifecostatrasdisc"])
+
+medtotcostbasedisc<- median(costsSum$totalcost[costsSum$scenario == "lifecostbasedisc"])
+iqrtotcostbasedisc <- IQR(costsSum$totalcost[costsSum$scenario == "lifecostbasedisc"])
+
+
+# Cost per infection averted
+medcostpia <- median(costsSum$totalcost[costsSum$scenario == "costatras"]/avertedSum$totalaverted)
+iqrcostpia <- IQR(costsSum$totalcost[costsSum$scenario == "costatras"]/avertedSum$totalaverted)
+
+medcostpiadisc <- median(costsSum$totalcost[costsSum$scenario == "costatrasdisc"]/avertedSum$totalaverted)
+iqrcostpiadisc <- IQR(costsSum$totalcost[costsSum$scenario == "costatrasdisc"]/avertedSum$totalaverted)
+
+# Savings and net costs
+medsaving <- median(costsSum$totalcost[costsSum$scenario == "lifecostbase"] - 
+                      costsSum$totalcost[costsSum$scenario == "lifecostatras"])
+
+iqrsaving <- IQR(costsSum$totalcost[costsSum$scenario == "lifecostbase"] - 
+                   costsSum$totalcost[costsSum$scenario == "lifecostatras"])
+
+medsavingdisc <- median(costsSum$totalcost[costsSum$scenario == "lifecostbasedisc"] - 
+                          costsSum$totalcost[costsSum$scenario == "lifecostatrasdisc"])
+
+iqrsavingdisc <- IQR(costsSum$totalcost[costsSum$scenario == "lifecostbasedisc"] - 
+                       costsSum$totalcost[costsSum$scenario == "lifecostatrasdisc"])
+
+mednetcost<- median(costsSum$totalcost[costsSum$scenario == "costatras"] - 
+                    costsSum$totalcost[costsSum$scenario == "lifecostbase"] + 
+                    costsSum$totalcost[costsSum$scenario == "lifecostatras"])
+
+iqrnetcost <- IQR(costsSum$totalcost[costsSum$scenario == "costatras"] - 
+                  costsSum$totalcost[costsSum$scenario == "lifecostbase"] + 
+                  costsSum$totalcost[costsSum$scenario == "lifecostatras"])
+
+mednetcostdisc <- median(costsSum$totalcost[costsSum$scenario == "costatrasdisc"] - 
+                        costsSum$totalcost[costsSum$scenario == "lifecostbasedisc"] + 
+                        costsSum$totalcost[costsSum$scenario == "lifecostatrasdisc"])
+
+iqrnetcostdisc <- IQR(costsSum$totalcost[costsSum$scenario == "costatrasdisc"] - 
+                     costsSum$totalcost[costsSum$scenario == "lifecostbasedisc"] + 
+                     costsSum$totalcost[costsSum$scenario == "lifecostatrasdisc"])
+
+```
+
+During the first year after enrolement for ATRAS the number of new infections casued by Medicare ineligible people is estimated to be `r median(startinfects)` (IQR:`r median(startinfects)-IQR(startinfects)/2` - `r median(startinfects)+IQR(startinfects)/2`). 
+As a percentage of the infected Medicare-ineligible population, this number of new infections equates to `r round(100*median(startinfects)/median(popsizemat[,1]),1)`% of the population (Figure 1). 
+
+The impact of expanding ATRAS to all Medicare ineligbiles and achieving almost universal viral suppression is to reduce annual new infections to a median of `r median(endinfects)` (IQR:`r median(endinfects)-IQR(endinfects)/2` - `r median(endinfects)+IQR(endinfects)/2`) after `r ` years (Figure 1).  Corresponding to `r round(100*median(endinfects)/median(popsizemat[,5]),)`% of the Medicare ineligible population. 
+ 
+```{r plotcode, echo=FALSE,messages = FALSE,include=FALSE}
+# Create plots of results
+graphics.off()
+
+# Initialize plotting properties
+colourmap <- c("#999999","#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7") # Colour blind palette with grey and black 
+
+# Theme for plot variables
+opts <- theme(text = element_text(face = "bold",size=12,colour="black"),
+  axis.text.x = element_text(face = "plain",size=10,colour="black"),
+  axis.text.y = element_text(face = "plain",size=10,colour="black"),
+  axis.line = element_line(colour="black"),
+  axis.ticks = element_line(colour="black"),
+  legend.position = "top",
+  legend.background = element_rect(),
+  legend.key = element_blank(),
+  panel.grid.major = element_blank(), 
+  panel.grid.minor = element_blank(), 
+  panel.background = element_blank(), 
+  axis.line = element_line(colour = "black")
+)
+
+simsplot <- ggplot(data = newinfections,aes(x=year,group=simulation)) + theme_bw() # Setup data for plot
+simsplot <- simsplot + geom_line(aes(y = totalinfectsbase,colour="Baseline simulations"),size = 1.05) # Plot baseline simulations
+simsplot <- simsplot + geom_line(aes(y = totalinfects,colour="ATRAS simulations"),size = 1.05) # ATRAS simulations
+simsplot <- simsplot + stat_summary(aes(y=totalinfectsbase,group=1),fun.y = median,geom = "line",colour=colourmap[2],size = 1.2) # Median of baseline simulations
+simsplot <- simsplot + stat_summary(aes(y=totalinfects,group=1),fun.y = median,geom = "line",colour=colourmap[7],size = 1.2) # Median of ATRAS simulation
+simsplot <- simsplot + scale_colour_manual("",breaks = c("Baseline simulations","ATRAS simulations"), values = c(colourmap[4],colourmap[1]))
+simsplot <- simsplot + ylim(0,round(max(newinfections$totalinfects,newinfections$totalinfectsbase),-1))
+simsplot <- simsplot + xlab("Years since start of ATRAS") + ylab("New infections") + opts
+
+# Create a boxplot for cumulative incidence
+totalplot <- ggplot(data = infectsSum,aes(x=scenario,y=newinfections)) +  theme_bw() + geom_boxplot(aes(fill=scenario),width = 0.75,alpha = 0.5)
+totalplot <- totalplot + scale_fill_manual(labels=c("Baseline","ATRAS"),values = c(colourmap[2],colourmap[7]))
+totalplot <- totalplot + xlab("") + ylab("Cumulative infections") + scale_colour_manual(labels=c("Baseline","ATRAS"),values = c(colourmap[2],colourmap[7])) + scale_x_discrete(labels=c("Baseline","ATRAS")) 
+totalplot <- totalplot + opts + theme(legend.position="none")
+
+# Histogram of averted infections
+avertplot <- ggplot(data = avertedSum,aes(x=totalaverted)) + theme_bw()
+avertplot <- avertplot + geom_density(alpha = 0.5, fill = colourmap[7])
+avertplot <- avertplot + xlab("Infections averted") + ylab("Density")
+avertplot <- avertplot + opts + theme(legend.position="none")
+
+# Create a plot for total costs 
+costplot <- ggplot(data = costsSum3,aes(x=scenario,y=totalcost/1e6)) + theme_bw() + stat_summary(fun.y="median", geom="bar", aes(fill=scenario,width=0.5),alpha = 0.5)
+costplot <- costplot + scale_fill_manual(values = c(colourmap[7],colourmap[2],colourmap[7],colourmap[2]))
+costplot <- costplot + stat_summary(fun.data="median_hilow",conf.int = 0.5, geom="errorbar",width = 0.2,size=1.1)
+costplot <- costplot + xlab("") + ylab("Millions AUD") + scale_x_discrete(labels=c("Cost of \n providing \n ART","Reduction \n in lifetime \n ART costs", "Cost of \n providing \n ART \n (discounted)","Reduction \n in lifetime \n ART costs \n (discounted)")) 
+costplot <- costplot + ylim(0,120) + geom_vline(aes(xintercept=2.5),linetype = "longdash")
+costplot <- costplot + annotate("text", x = 1.5, y = 100, label = "No discounting") + 
+            annotate("text", x = 3.5, y = 100, label = paste("Discounted ", toString(100*discRate), "%",sep = ""))
+costplot <- costplot + opts + theme(legend.position="none")
+
+# Show plots in separate windows and save to file if requested
+if (showPlots || savePlots){windows(width=6,height=4.5); print(simsplot)}
+if (savePlots){dev.print(pdf,file=paste(outputFolder, "/figures/", currTime, " Results_Sims", saveFileTag,".pdf",sep =""))}
+if (showPlots || savePlots){windows(width=12,height=4.5); print(grid.arrange(totalplot,avertplot,ncol = 2))}
+if (savePlots){dev.print(pdf,file=paste(outputFolder, "/figures/", currTime, " Results_Total", saveFileTag,".pdf",sep =""))}
+if (showPlots || savePlots){windows(width=6,height=4.5); print(costplot)}
+if (savePlots){dev.print(pdf,file=paste(outputFolder, "/figures/", currTime, " Results_Costs", saveFileTag,".pdf",sep =""))}
+
+
+```
+
+**Figure 1** - Annual number of new infections casued by HIV-positive Medicare ineligibles for each simulation. The grey lines represent the baseline simulations while the blue lines are for the expansion of ART to all Medicare ineligibles. The black and dark blue lines show the median number of new infections for the baseline and expanded ART simulations respectively.   
+
+```{r insertyplots1, echo=FALSE, messages = FALSE, warning = FALSE, fig.width=4, fig.height=3}
+if(knitplots){print(simsplot)}
+```
+
+Figure 2 shows the distributions for the cumulative number of new infections in partners of Medicare ineligibles for the baseline scenario and if ART is provided to all Medicare ineligibles. Providing treatment to all Medicare ineligibles will avert a median of `r avertmed`  new infections (IQR: `r avertmed-avertiqr/2` - `r avertmed+avertiqr/2`) over `r runyears-1` years.
+
+**Figure 2** - Total number of number of new infections (left) and the distribution in infections averted (right) over `r runyears-1` years after all HIV-positive people ineligible for Medicare are provided ART.
+
+```{r insertyplots2, echo=FALSE, messages = FALSE, warning = FALSE, fig.width=6, fig.height=3}
+if(knitplots){print(grid.arrange(totalplot,avertplot,ncol = 2))}
+```
+
+Providing ART to Medicare ineligibles over `r runyears-1` years is estimated to have a median undiscounted cost of \$`r formatC(round(medacost,-4),format="d",big.mark=',')` (IQR: \$`r formatC(round(medacost -iqracost/2,4),format="d",big.mark=',')` - \$`r formatC(round(medacost + iqracost/2,4),format="d",big.mark=',')`) and a median discounted cost of \$`r formatC(round(medacostdisc,-4),format="d",big.mark=',')` (IQR: \$`r formatC(round(medacostdisc -iqracostdisc/2,4),format="d",big.mark=',')` - \$`r formatC(round(medacostdisc + iqracostdisc/2,4),format="d",big.mark=',')`). This corresponds to a cost per infection averted of 
+\$`r formatC(round(medcostpiadisc,-4),format="d",big.mark=',')` (IQR: \$`r formatC(round(medcostpiadisc -iqrcostpiadisc/2,4),format="d",big.mark=',')` - \$`r formatC(round(medcostpiadisc + iqrcostpiadisc/2,4),format="d",big.mark=',')`)
+(with 5% discounting).
+
+Figure 3 shows the cumulative costs for providing ART to Medicare ineligible people for the next `r runyears-1` years and the savings due to the reduction in infections during this period. The median undiscounted cumulative cost when ART is expanded to all Medicare ineligible PLHIV is \$`r formatC(round(medacost,4),format="d",big.mark=',')` (IQR: \$`r formatC(round(medacost -iqracost/2,4),format="d",big.mark=',')` - \$`r formatC(round(medacost + iqracost/2,4),format="d",big.mark=',')`) (taking the median of the sum for each simulation). The resulting reduction in infections gives a median saving of \$`r formatC(round(medsaving,4),format="d",big.mark=',')` (IQR: \$`r formatC(round(medsaving - iqrsaving/2,4),format="d",big.mark=',')` - \$`r formatC(round(medsaving + iqrsaving/2,4),format="d",big.mark=',')`); Figure 3) in the lifetime treatment costs for newly infected people. When discounting is taken into account, the costs of providing ART reduce to a median \$`r formatC(round(medacostdisc,4),format="d",big.mark=',')` (IQR: \$`r formatC(round(medacostdisc -iqracostdisc/2,4),format="d",big.mark=',')` - \$`r formatC(round(medacostdisc + iqracostdisc/2,4),format="d",big.mark=',')`) and the resulting saving in treatment costs reduces to a median of \$`r formatC(round(medsavingdisc,4),format="d",big.mark=',')` (IQR: \$`r formatC(round(medsavingdisc -iqrsavingdisc/2,4),format="d",big.mark=',')` - \$`r formatC(round(medsavingdisc + iqrsavingdisc/2,4),format="d",big.mark=',')`).
+
+**Figure 3** - Median total costs for providing all Medicare ineligbles with ART and the reduction in lifetime treatment costs for partners of Medicare Ineligibles who acquire infection over `r runyears-1` years. The bars show the interquartile range in total costs across all simulations.
+
+```{r insertyplots3, echo=FALSE, messages = FALSE, warning = FALSE, fig.width=6, fig.height=3}
+if(knitplots){print(costplot)}
+```
+
+```{r tidyup,echo = FALSE}
+options(scipen=0)  # Set back to default
+```
+
+### Appendix: Details of calculations
+
+The overall number of new infections per year is calculated by summing the number of new infections caused by MSM and non-MSM population group; i.e. $$I(y) = I_m(y) + I_n(y),$$ where $y$ is the given year.
+
+Letting the index $x$ represent one of the populations groups (and droping $y$ for the time being), the probability of HIV transmission to a HIV-negative sexual partner is given by
+$$\beta'_x = [(1-\theta)\beta_x + \theta(1-\psi)\beta_x + \theta\psi(1-\epsilon_{ART})\beta_x]$$ 
+as ineffective treatment (resulting in unsuppressed virus) has the same transmission probability as no treatment. After some algebra this gives
+$$\beta'_x = (1-\theta\psi\epsilon_{ART})\beta_x.$$ 
+
+Using this probability, the number of new infections each year $I_x$ is given by a binomial distribution
+$$I_x \sim binom(Np_x,\beta'_x).$$ 
+For large N and small $\beta'_x$ this is approximately equal to 
+$$I_x = Np_x\beta'_x = Np_x(1-\theta\psi\epsilon_{ART})\beta_x,$$ 
+and the number of new infections is given by a risk equation. <!--- In the Rmarkdown script there is an option to use the risk equation approach instead of the sampling from a binomial disytribution ---> Given the relatively small population size and the high levels of ART coverage and viral suppression, likely resulting in a small  number of infections, we use the stochastic approach in this anaylsis. 
+
+Adding the population terms together gives the overall number of new infections $I(y)$ in a given year $y$. The cumulative number of new infections in partners of medicare ineligibles over $y$ years is then equal to
+$$\sum_{y = 1}^{years} I(y)$$ 
+and the total cost of providing ART to Medicare ineligibles is
+$$\sum_{y = 1}^{years} N(y) \theta(y) c_{ART}/(1+r_{disc})^y$$ (undiscounted costs are calculated by setting the discount rate to $0$). 
+The total future costs of providing treatment to newly infected partners of Medicare ineligibles is given by 
+$$\sum_{y = 1}^{years} I(y)*\sum_{l = 1}^{y_{art}} c_{ART}(l)/(1+r_{disc})^{l+t_{ART}}$$
+where $y_{ART}$ is the number of years infected people will be on ART, $c_{ART}(l)$ is the annual cost of ART $l$ years from initiation, and $t_{ART}$ is the time between infection initiating ART (undiscounted costs are calculated by setting the discount rate to $0$).  
+
+### References
+
+
+
+
+
