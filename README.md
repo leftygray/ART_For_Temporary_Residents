@@ -12,11 +12,9 @@ The aim of these calculations is to estimate the number of new HIV infections th
 
 ## Code
 
-The R code for these calculations is available in two Rmarkdown files:
+The R code for these calculations is available in a Rmarkdown file:
 
 * Medicare_Ineligibles.rmd — file to produce all the results for the second ATRAS report ([released March 2015](https://kirby.unsw.edu.au/publications/australian-hiv-observational-database-temporary-residents-access-study-atras-mar-2015)).
 
-* Medicare_Ineligibles_manuscript.rmd. Modified version of Medicare_ineligibles.rmd to produce a manuscript suitable for submission to a journal. 
-
-Both documents are written in dynamic format using R markdown v2 within R studio 0.98.1056 (using R version 3.1.2). Plots are created using the package ggplot2. Further details are available in the associated R markdown files which also contains the R code to produce all the results separately when the markdown is run. Code blocks are suppressed in the output documents. 
+This document is written in dynamic format using R markdown v2 within R studio 0.98.1056 (using R version 3.1.2). Plots are created using the package ggplot2. Further details are available in the associated R markdown file which contains the R code to produce all the results separately when the markdown is run. Code blocks are suppressed in the output documents. 
 Other files in the repository are support files to produce the final output documents. 
