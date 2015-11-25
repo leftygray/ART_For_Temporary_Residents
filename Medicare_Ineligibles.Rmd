@@ -50,7 +50,7 @@ if (!file.exists(outputFolder)){dir.create(file.path("./",outputFolder))}
 if (!file.exists(docFolder)){dir.create(file.path("./",docFolder))}
 
 # Produce plots in windows for viewing separately and save plots separately.
-showPlots <- TRUE   # Show plots in separate windows
+showPlots <- FALSE   # Show plots in separate windows
 savePlots <- TRUE  # Save plots to file
 knitplots <- TRUE  # Insert plots in the produced Rmarkdown document
 
@@ -653,12 +653,33 @@ costplot <- costplot + annotate("text", x = 1.5, y = 100, label = "No discountin
 costplot <- costplot + opts + theme(legend.position="none")
 
 # Show plots in separate windows and save to file if requested
-if (showPlots || savePlots){windows(width=6,height=4.5); print(simsplot)}
-if (savePlots){dev.print(pdf,file=paste(outputFolder, "/figures/", currTime, " Results_Sims", saveFileTag,".pdf",sep =""))}
-if (showPlots || savePlots){windows(width=12,height=4.5); print(grid.arrange(totalplot,avertplot,ncol = 2))}
-if (savePlots){dev.print(pdf,file=paste(outputFolder, "/figures/", currTime, " Results_Total", saveFileTag,".pdf",sep =""))}
-if (showPlots || savePlots){windows(width=6,height=4.5); print(costplot)}
-if (savePlots){dev.print(pdf,file=paste(outputFolder, "/figures/", currTime, " Results_Costs", saveFileTag,".pdf",sep =""))}
+if (showPlots || savePlots){
+  windows(width=6,height=4.5); print(simsplot)
+}
+if (savePlots){
+  dev.print(pdf,file=paste(outputFolder, "/figures/", currTime, " Results_Sims", saveFileTag,".pdf",sep =""))
+}
+
+if (showPlots || savePlots){
+  windows(width=12,height=4.5); print(grid.arrange(totalplot,avertplot,ncol = 2))
+}
+if (savePlots){
+  dev.print(pdf,file=paste(outputFolder, "/figures/", currTime, " Results_Total", saveFileTag,".pdf",sep =""))
+}
+
+if (savePlots){
+  windows(width=6,height=4.5); print(totalplot)
+  dev.print(pdf,file=paste(outputFolder, "/figures/", currTime, " Results_Total-A", saveFileTag,".pdf",sep =""))
+  windows(width=6,height=4.5); print(avertplot)
+dev.print(pdf,file=paste(outputFolder, "/figures/", currTime, " Results_Total-B", saveFileTag,".pdf",sep =""))
+}
+
+if (showPlots || savePlots){
+  windows(width=6,height=4.5); print(costplot)
+  }
+if (savePlots){
+  dev.print(pdf,file=paste(outputFolder, "/figures/", currTime, " Results_Costs", saveFileTag,".pdf",sep =""))
+}
 
 
 ```
