@@ -10,9 +10,9 @@ csl: docs/plos.csl
 bibliography: docs/medicare_ineligibles.bib
 ---
 
-This document summarises a simple analysis to calculate the impact of providing anti-retroviral therapy (ART) to people living with HIV (PLHIV) in Australia who are medicare ineligible. This analysis uses data from the Australian HIV Observational Database Temporary Residents Access Study (ATRAS) [@petoumenos2013australian].The R code for these calculations is available in the associated Rmarkdown file. The aim of these calculations is to estimate the number of new HIV infections that occur through transmission from Medicare ineligible people to their sexual partners, the cost of providing ART to the Medicare ineligible population, and the potential future cost of providing treatment to partners of Medicare ineligibles who become infected. <!--- This is version v2.0 of the calculations and document. Previous versions are available in a corresponding git repository --->
+This document summarizes a simple analysis to calculate the impact of providing anti-retroviral therapy (ART) to people living with HIV (PLHIV) in Australia who are Medicare ineligible. This analysis uses data from the Australian HIV Observational Database Temporary Residents Access Study (ATRAS) [@petoumenos2013australian].The R code for these calculations is available in the associated Rmarkdown file. The aim of these calculations is to estimate the number of new HIV infections that occur through transmission from Medicare ineligible people to their sexual partners, the cost of providing ART to the Medicare ineligible population, and the potential future cost of providing treatment to partners of Medicare ineligibles who become infected. <!--- This is version v2.0 of the calculations and document. Previous versions are available in a corresponding git repository --->
 
-This document is written in dynamic format using R markdown v2 within R studio 0.98.1056 (using R version 3.1.2). Plots are created using the package ggplot2. Further details are available in the associated R markdown file which also contains the R code to produce all the results when the markdown is run. Code blocks have been supressed in the output document. <!--- The document was currently produced using R markdown v2 within Rstudio using `r substr(R.Version()$version.string,1,15)`, knitr, pandoc, and Miktex (for Latex) for producing the associated PDF or Word Document output. The analysis uses the R packages ggplot2, reshape, gridExtra. To update the results the markdown file needs to be loaded in Rstudio or run using the tools separately. ---> 
+This document is written in dynamic format using R markdown v2 within R studio 0.98.1056 (using R version 3.1.2). Plots are created using the package ggplot2. Further details are available in the associated Rmarkdown file, which also contains the R code to produce all the results when the markdown is run. Code blocks have been suppressed in the output document. <!--- The document was currently produced using Rmarkdown v2 within Rstudio using `r substr(R.Version()$version.string,1,15)`, knitr, pandoc, and Miktex (for Latex) for producing the associated PDF or Word Document output. The analysis uses the R packages ggplot2, reshape, gridExtra. To update the results the markdown file needs to be loaded in Rstudio or run using the tools separately. ---> 
 
 ```{r initialization,echo = FALSE,messages = FALSE,include=FALSE}
 # Clear workspace
@@ -56,9 +56,9 @@ knitplots <- TRUE  # Insert plots in the produced Rmarkdown document
 
 ```
 
-### Methodogy 
+### Methodology 
 
-This section summarises the methodology used for the calculations. A simple mathematical model is used to caluclate the change in population size over time and the number of new infections in partners of medicare ineligible people. Model details, assumptions and input parameters are described below.
+This section summarizes the methodology used for the calculations. A simple mathematical model is used to calculate the change in population size over time and the number of new infections in partners of Medicare ineligible people. Descriptions of model details, assumptions and input parameters follow below.
 
 ```{r SimVariables,echo=FALSE}
 if (!loadVars || !loadResults){
@@ -93,18 +93,18 @@ if (!loadVars || !loadResults){
 
 #### Demographics
 
-For this analysis we consider a population of PLHIV who are medicare ineligible with the characteristics of people in ATRAS [@petoumenos2013australian]. The overall population is split into  males who are men who have sex with men (MSM) (which, for the purposes of this analysis, we assume are exclusively homosexual) and all those who are not MSM. The proportion of people in each of these populations is based on ATRAS data and assumed to be constant over time. This comparmentalisation of the population is used to distinguish the risk of HIV infection rather than treatment coverage and adherence.
+For this analysis, we consider a population of PLHIV who are Medicare ineligible with the characteristics of people in ATRAS [@petoumenos2013australian]. The overall population is split into  males who are men who have sex with men (MSM) (which, for the purposes of this analysis, we assume are exclusively homosexual) and all those who are not MSM. The proportion of people in each of these populations is based on ATRAS data and assumed constant over time. This compartmentalization of the population is used to distinguish the risk of HIV infection rather than treatment coverage and adherence.
 
-The number of medicare ineligibles can change over time with people becoming eligible for medicare provided ART and new temporary residents entering the population. This movement is represented by a constant growth rate for the population $\pi$ (which is positive for a growing population and negative for a declining population). <!--- In ATRAS aproximately 20% of people become medicare eligible and leave the population each year, this would be lower bound on the rate of population change ---> Letting $N(y)$ equal the total population size in year $y$, the number of medicare ineligible people in the population is then given by
+The number of Medicare ineligibles can change over time with people becoming eligible for Medicare provided ART and new temporary residents entering the population. We represent this movement using a constant growth rate for the population $\pi$ (which is positive for a growing population and negative for a declining population). <!--- In ATRAS approximately 20% of people become medicare eligible and leave the population each year, this would be lower bound on the rate of population change ---> Letting $N(y)$ equal the total population size in year $y$, the number of medicare ineligible people in the population is then given by
 $$N(y) = N(0)\pi^y.$$ For this analysis we assume only a small change in the population over time so the overall population size is relatively constant.
 
 #### Clinical characteristics
 
-The main aim of this analysis is to investigate the effect of providing all Medicare ineligible people in ATRAS with ART on HIV transmission. For the calculations we simply consider the proportion of the population taking ART and the proportion of those on ART with viral suppression. Both of these inputs can change over time based on the ATRAS data. We do not consider different proportions for each population group. The most recent data value is used for projections beyond the years of available data. 
+The main aim of this analysis is to investigate the effect of providing all Medicare ineligible people in ATRAS with ART on HIV transmission. For the calculations, we simply consider the proportion of the population taking ART and the proportion of those on ART with viral suppression. Both of these inputs can change over time based on the ATRAS data. We do not consider different proportions for each population group. We used the most recent data value for projections beyond the years of available data. 
 
 #### HIV transmission to partners
 
-HIV transmission occurs through sexual intercourse between medicare ineligibles and their sexual partners. We assume all partners are Medicare eligible and initiating ART does not change the risk of transmission to partners (through changes in behaviour for example). We also do not consider onward transmission from newly infected partners. As the sexual behaviour for the ART and non-ART population is the same, we use a simple risk equation approach with the overall annual risk of transmission calculated from national data rather than incorporating complex sexual behaviour. 
+HIV transmission occurs through sexual intercourse between Medicare ineligibles and their sexual partners. We assume all partners are Medicare eligible and initiating ART does not change the risk of transmission to partners (through changes in behavior for example). We also do not consider onward transmission from newly infected partners. As the sexual behavior for the ART and non-ART population is the same, we use a simple risk equation approach with the overall annual risk of transmission calculated from national data rather than incorporating complex sexual behavior. 
 
 
 ```{r betafunction,echo = FALSE, messages = FALSE}
@@ -116,10 +116,10 @@ beta <- function(incidence,numInfected,propart,propvs,effart){
 
 Key assumptions:
 
-* HIV transmission from Medicare ineligibles who are not on ART is the same as for the Australian population of PLHIV not on ART.
-* Partners of HIV positive people who are ineligible for Medicare are assumed to be Medicare eligible.
+* HIV transmission from Medicare ineligibles not on ART is the same as for the Australian population of PLHIV not on ART.
+* We assume partners of HIV positive people who are ineligible for Medicare are Medicare eligible.
 * Those with unsuppressed virus have the same transmission risk as those not taking ART.
-* Transmission parameters are assumed constant over time.
+* Transmission parameters are constant over time.
 
 #### Costs associated with ART provision
 
@@ -219,7 +219,7 @@ if (!loadVars && !loadResults){
 ```
 
 
-**Table 1** - Calculation input parameter ranges. Justifications for these parameter ranges are provided in endnotes. The simulations used for the calculations take samples from these ranges assuming a uniform distribution. 
+**Table 1** - Calculation input parameter ranges. Justifications for these parameter ranges are provided in end notes. The simulations used for the calculations take samples from these ranges assuming a uniform distribution. 
 
 Parameter           | Description                | Range                                        | Reference                
 --------------------|----------------------------|----------------------------------------------|------------------------   
@@ -229,32 +229,32 @@ $\pi$ | Multiplicative change in annual population | [`r pop_growth[1]` - `r pop
 $p_m$ | Proportion of Medicare-ineligible population of PLHIV who are MSM | [`r prop_m[1]` - `r prop_m[2]`] | 1   
 $p_n$ | Proportion of Medicare-ineligible population of PLHIV who are non-MSM | Given by $1-p_m$ | 1  
 **Clinical parameters** | | |   
-$\theta$ | Proportion of population taking ART | 63% at enrolment and 95% after 12 months $\pm$ 5% | 2  
-$\psi$ | Proportion of population taking ART with undetectable viral load | 70% at enrolement, 88% after 12 months, and 96% after 24 months $\pm$ 5%    | 2  
+$\theta$ | Proportion of population taking ART | 63% at enrollment and 95% after 12 months $\pm$ 5% | 2  
+$\psi$ | Proportion of population taking ART with undetectable viral load | 70% at enrollment, 88% after 12 months, and 96% after 24 months $\pm$ 5%    | 2  
 **HIV transmission parameters** | | |   
-$\beta_n$ | Annual probability an untreated non-MSM transmists HIV to another person |  [`r round(betanRange[1],4)` - `r round(betanRange[2],4)`] | 3    
-$\beta_m$ | Annual probability an untreated MSM transmists HIV to another person |  [`r round(betamRange[1],4)` - `r round(betanRange[2],4)`] |  3  
+$\beta_n$ | Annual probability an untreated non-MSM transmits HIV to another person |  [`r round(betanRange[1],4)` - `r round(betanRange[2],4)`] | 3    
+$\beta_m$ | Annual probability an untreated MSM transmits HIV to another person |  [`r round(betamRange[1],4)` - `r round(betamRange[2],4)`] |  3  
 $\epsilon_{ART}$ | Efficacy of ART in preventing HIV transmission if virus is suppressed | [`r epsilon_art[1]` - `r epsilon_art[2]`] | 4   
 **Treatment costs** | | |  
-$c_{ART}$ | Average annual undiscounted cost of providing ART to Medicare ineligbles | [\$`r formatC(artcost[1],format="d",big.mark=',')` - \$`r formatC(artcost[2],format="d",big.mark=',')`] | 5   
+$c_{ART}$ | Average annual undiscounted cost of providing ART to Medicare ineligibles | [\$`r formatC(artcost[1],format="d",big.mark=',')` - \$`r formatC(artcost[2],format="d",big.mark=',')`] | 5   
 $c_{life}$ | Average undiscounted lifetime cost of providing ART post infection | [\$`r formatC(lifecostRange[1],format="d",big.mark=',')` - \$`r formatC(lifecostRange[2],format="d",big.mark=',')`] | 6   
 $r_{disc}$ | Discounting rate | `r 100*discRate`% | 7  
 $t_{ART}$ | Average time between infection and initiating ART | [`r timeTreat[1]` - `r timeTreat[2]`] years | 7 
 
    
-1. The 2013 ATRAS report <!--- data for 2011-12 when ATRAS started. Up to 460 in 2014 ---> estimates there are 450 Medicare ineligible PLHIV in Australia [@petoumenos2013australian]. We assume a range in the population between 400 and 500 PLHIV with the potential for only a small change in population size over time. In the population of 180 at enrolmentm 89 (50%) of the males attributing their HIV infection to MSM exposure [@petoumenos2013australian]. Assuming this reflects the demographic distribution over time, we assume 40-60% of the population is MSM with the remainder non-MSM.  
+1. The 2013 ATRAS report <!--- data for 2011-12 when ATRAS started. Up to 460 in 2014 --->estimates there are 450 Medicare ineligible PLHIV in Australia [@petoumenos2013australian]. We assume a range in the population between 400 and 500 PLHIV with the potential for only a small change in population size over time. In the population of 180 at enrollment, 89 (50%) of the males attributed their HIV infection to MSM exposure [@petoumenos2013australian]. Assuming this reflects the demographic distribution over time, we assume 40-60% of the population is MSM with the remainder non-MSM.  
 
-2. At enrolment 62.8% of ATRAS patients were already receiving ART with 71.8% having undetectable viral load [@petoumenos2013australian]. After  enrolment all patients were put onto ART resulting in 87% having undetectable viral load at 12 months and 96% having undetectable viral load at 24 months [@petoumenos2013australian]. Based on the ATRAS data we assume the percenatge of Medicare ineligibles on ART increases from 70% to 95% with a range of $\pm$ 5% with the proportion with undetecvtable virus increasing from 70% to 96% over two years with a range of $\pm$ 5%.  
+2. At enrollment, 62.8% of ATRAS patients were already receiving ART with 71.8% having undetectable viral load [@petoumenos2013australian]. After enrollment, all patients were put onto ART resulting in 87% having undetectable viral load at 12 months and 96% having undetectable viral load at 24 months [@petoumenos2013australian]. Based on the ATRAS data we assume the percentage of Medicare ineligibles on ART increases from 70% to 95% with a range of $\pm$ 5% with the proportion with undetectable virus increasing from 70% to 96% over two years with a range of $\pm$ 5%.  
 
-3. These values are calculated using data for the overall population of PLHIV in Australia. Using the equation $I = N(1-\theta)\beta + N\theta(1-\psi)\beta + N\theta\psi(1-\epsilon_{ART})\beta = N\beta(1-\theta\psi\epsilon_{ART})$ where $I$ is the overall incidence in Australian MSM and non-MSM, $N$ is the overall number of PLHIV in Australia who are MSM and non-MSM, and the remaining parmaters have the same meaning as in Table 1 we can estimate the value of $\beta$ for MSM and non-MSM. In 2013 there were an estimated 26,640 PLHIV in Australia and 912 new infections [@jamespaper] of which around 75% are attributed to homosexual contact [@asr2014report]. According to recent estimates for the HIV treatment cascade in Australia around 75% of MSM living with HIV [@gcps2014report] and 55% of non-MSM living with HIV are taking ART [@jwilsoncascade], respectively.  In both MSM and non-MSM taking ART, around 90% have an undetectable viral load [@gcps2014report; @ahod2014report]. Putting these values into the equation above and assuming $\pm$ 25% uncertainty produces the values of $\beta_n$ and $\beta_m$.   
+3. These values are calculated using data for the overall population of PLHIV in Australia. Using the equation $I = N(1-\theta)\beta + N\theta(1-\psi)\beta + N\theta\psi(1-\epsilon_{ART})\beta = N\beta(1-\theta\psi\epsilon_{ART})$ where $I$ is the overall incidence in Australian MSM and non-MSM, $N$ is the overall number of PLHIV in Australia who are MSM and non-MSM, and the remaining parameters have the same meaning as in Table 1 we can estimate the value of $\beta$ for MSM and non-MSM. In 2013, there were an estimated 26,640 PLHIV in Australia and 912 new infections [@jamespaper] of which around 75% are attributed to homosexual contact [@asr2014report]. According to recent estimates for the HIV treatment cascade in Australia, around 75% of MSM living with HIV [@gcps2014report] and 55% of non-MSM living with HIV are taking ART [@jwilsoncascade], respectively.  In both MSM and non-MSM taking ART, around 90% have an undetectable viral load [@gcps2014report; @ahod2014report]. Putting these values into the equation above and assuming $\pm$ 25% uncertainty produces the values of $\beta_n$ and $\beta_m$.   
 
 4. We assume those with viral suppression have a 96% reduction in transmission to their sexual partners in line with the results from the HPTN-052 trial for those with detectable drug [@cohen2011prevention].   
 
-5.At enrolement 83% of the ATRAS cohort on ART were taking Tenofovir/Emtrcitabine (Truvada) as the 'backbone' of their regime. This means the vast majority of those on treatment are taking first-line drugs. For this analysis we assume all patients are on and remain on first-line ART over the period of analysis. From Scheider et. al. the average annual cost of first-line drugs is $10,685 ($6,945-$14,424) [@schneider2014cost]. Using this value we assume a range in the annual ART cost of \$`r formatC(artcost[1],format="d",big.mark=',')` to \$`r formatC(artcost[2],format="d",big.mark=',')`.
+5.At enrollment, 83% of the ATRAS cohort on ART were taking Tenofovir/Emtrcitabine (Truvada) as the 'backbone' of their regime. This means the vast majority of those on treatment are taking first-line drugs. For this analysis, we assume all patients are on and remain on first-line ART over the period of analysis. From Schneider et. al., the average annual cost of first-line drugs is $10,685 ($6,945-$14,424) [@schneider2014cost]. Using this value, we assume a range in the annual ART cost of \$`r formatC(artcost[1],format="d",big.mark=',')` to \$`r formatC(artcost[2],format="d",big.mark=',')`.
 
-6. If a partner of a Medicare ineligible becomes infected with HIV then they will eventually require care and treatment while they are living in Australia. As we are not tracking their infection progression in this analysis we use an estimate for the lifetime cost of providing ART. An analysis of the life expectancy of PLHIV in Australia given currently available antiretroviral treatments suggests someone starting treatment in their twenties will be taking ART for around 40 years [@jansson2013currently] spendng ~`r yearsFirst` years on first-line drugs,  ~`r yearsSecond` years on second-line drugs, ~`r yearsThird` years on third-line drugs, and the reminder of the time on higher classes of drug. Using the cost estimates from [@schneider2014cost], we assume the annual costs of proving each line of drugs is: \$`r costFirst` for first-line drugs, \$`r costFirst` for second-line drugs, \$`r costFirst` for third-line drugs, and \$`r costFirst` for fourth and higher lines of drugs. Mutiplying the values for each drug class and summing produces the undiscounted cost presented here. To account for all uncertianties in time on each treatment class and drug costs we assume a range of $\pm$ 25% in the overall undiscounted cost. 
+6. If a partner of a Medicare ineligible becomes infected with HIV then they will eventually require care and treatment while they are living in Australia. As we are not tracking their infection progression in this analysis, we use an estimate for the lifetime cost of providing ART. An analysis of the life expectancy of PLHIV in Australia given currently available antiretroviral treatments suggests someone starting treatment in their twenties will be taking ART for around 40 years [@jansson2013currently] spending ~`r yearsFirst` years on first-line drugs,  ~`r yearsSecond` years on second-line drugs, ~`r yearsThird` years on third-line drugs, and the reminder of the time on higher classes of drug. Using the cost estimates from [@schneider2014cost], we assume the annual costs of proving each line of drugs is: \$`r costFirst` for first-line drugs, \$`r costSecond` for second-line drugs, \$`r costThird` for third-line drugs, and \$`r costFourth` for fourth and higher lines of drugs. Multiplying the values for each drug class and summing produces the undiscounted cost presented here. To account for all uncertainties in time on each treatment class and drug costs we assume a range of $\pm$ 25% in the overall undiscounted cost. 
 
-7. To discount future costs of providing ART to people ineligible for Medicare and those who become infected we apply a discount rate of 5% from the year of enrolement in ATRAS for all treatment costs. For discounting pruposes we include the time between infection and initiating ART, this is estimated from data on the CD4 count at initiating therapy and estimates for the rate of CD4 decline. In recent years participants in the AHOD cohort have initiated ART at around 350 cells/$\mu$L [@ahod2014report], it is estimated it takes 4.4 years for a person to reach this CD4 count post infection [@jamespaper]. We therefore assume a range of 4 to 5 years for the time between infection and ART initiation. 
+7. To discount future costs of providing ART to people ineligible for Medicare and those who become infected we apply a discount rate of 5% from the year of enrollment in ATRAS for all treatment costs. For discounting purposes we include the time between infection and initiating ART, this is estimated from data on the CD4 count at initiating therapy and estimates for the rate of CD4 decline. In recent years participants in the AHOD cohort have initiated ART at around 350 cells/$\mu$L [@ahod2014report], it is estimated it takes 4.4 years for a person to reach this CD4 count post infection [@jamespaper]. We therefore assume a range of 4 to 5 years for the time between infection and ART initiation. 
 
 
 ```{r vectoriseParams, echo = FALSE,  messages = FALSE}
@@ -319,19 +319,19 @@ timeTreatVec <- runif(numsims,timeTreat[1],timeTreat[2])
 
 #### Calculations for number of new infections caused by people ineligible for Medicare
 
-We use simple risk-equation calculations to estimate the number of people who become infected through partnerships with HIV-positive people ineligible for Medicare. Details of the calculations are provided in the appendix.
+We use simple risk-equation calculations to estimate the number of people infected through partnerships with HIV-positive people ineligible for Medicare. The appendix provides details of the calculations.
 
-The total number of new infections is given by the sum of the infections caused by Medicare-ineligible MSM and non-MSM each year. For each population, we first calculate the probabilty of infecting another person using an equation incorporating the level of ART use and viral suppression. The proportion of the population taking ART and with suppressed virus changes overtime matching the ATRAS data in Table 1. 
+The total number of new infections equals the sum of infections caused by Medicare-ineligible MSM and non-MSM each year. For each population, we first calculate the probability of infecting another person using an equation incorporating the level of ART use and viral suppression. The proportion of the population on ART and with suppressed virus changes over time, matching the ATRAS data in Table 1. 
 
-Using this probability, we estimate the number of new infections caused by MSM and non-MSM Medicare-ineligibles each year through sampling from a binomial distribution. <!--- In the Rmarkdown script there is an option to use the risk equation approach instead of the sampling from a binomial distribution. Given the relatively small population size and the high levels of ART coverage and viral suppression, only a small number of new infections are likely and we use the stochastic approach in this anaylsis. ---> Adding the population terms together gives the overall number of new infections caused by Medicare-ineligibles in a given year and cumulatively over time. 
+Using this probability, we estimate the number of new infections caused by MSM and non-MSM Medicare-ineligibles each year through sampling from a binomial distribution. <!--- In the Rmarkdown script there is an option to use the risk equation approach instead of the sampling from a binomial distribution. Given the relatively small population size and the high levels of ART coverage and viral suppression, only a small number of new infections are likely and we use the stochastic approach in this analysis. ---> Adding the population terms together gives the overall number of new infections caused by Medicare-ineligibles in a given year and cumulatively over time. 
 
 #### Cost calculations
 
-The total cost of providing ART to people ineligible for Medicare ineligibles is calculated by mutliplying the annual number of people ineligible for Medicare infected with HIV by the annual cost of providing ART and summing over the period of analysis. For sexual partners of Medicare-ineligibles who become infected with HIV we calculate the cost per infection averted and overall future lifetime cost of providing care and treatment to these people by multiplying the cumulative number of people who acquire infection by the undicsounted (reported in Table 1) lifetime cost and the discounted lifetime cost. 
+The total cost of providing ART to people ineligible for Medicare ineligibles is calculated by multiplying the annual number of people ineligible for Medicare infected with HIV by the annual cost of providing ART and summing over the period of analysis. For sexual partners of Medicare-ineligibles who become infected with HIV we calculate the cost per infection averted and overall future lifetime cost of providing care and treatment to these people by multiplying the cumulative number of people who acquire infection by the undiscounted (reported in Table 1) lifetime cost and the discounted lifetime cost. 
 
 #### Simulations
 
-To perform this analysis, we generated `r numsims` input parameter sets by sampling from each of the parameter ranges in Table 1. For each of these parameter sets we then ran `r stochasticSims` simulations to account for stochastic variations. Each simulation was run for `r runyears-1` years since the enrolment of patients into ATRAS. We then calculated summary statistics using the results from each simulation.  
+To perform this analysis, we generated `r numsims` input parameter sets by sampling from each of the parameter ranges in Table 1. For each of these parameter sets we then ran `r stochasticSims` simulations to account for stochastic variations. We ran each simulation for `r runyears-1` years since the enrollment of patients into ATRAS. We then calculated summary statistics using the results from each simulation.  
 
 ```{r functions,echo = FALSE, messages = FALSE}
 # Define two functions to calculate the incidence for a population. The second function can either be stocastic or deterministic
@@ -594,10 +594,10 @@ iqrnetcostdisc <- IQR(costsSum$totalcost[costsSum$scenario == "costatrasdisc"] -
 
 ```
 
-During the first year after enrolement for ATRAS the number of new infections casued by Medicare ineligible people is estimated to be `r median(startinfects)` (IQR:`r median(startinfects)-IQR(startinfects)/2` - `r median(startinfects)+IQR(startinfects)/2`). 
+During the first year after enrollment for ATRAS the number of new infections caused by Medicare ineligible people is estimated to be `r median(startinfects)` (IQR: `r median(startinfects)-IQR(startinfects)/2` - `r median(startinfects)+IQR(startinfects)/2`). 
 As a percentage of the infected Medicare-ineligible population, this number of new infections equates to `r round(100*median(startinfects)/median(popsizemat[,1]),1)`% of the population (Figure 1). 
 
-The impact of expanding ATRAS to all Medicare ineligbiles and achieving almost universal viral suppression is to reduce annual new infections to a median of `r median(endinfects)` (IQR:`r median(endinfects)-IQR(endinfects)/2` - `r median(endinfects)+IQR(endinfects)/2`) after `r ` years (Figure 1).  Corresponding to `r round(100*median(endinfects)/median(popsizemat[,5]),)`% of the Medicare ineligible population. 
+The impact of expanding ATRAS to all Medicare ineligibles and achieving almost universal viral suppression is to reduce annual new infections to a median of `r median(endinfects)` (IQR:`r median(endinfects)-IQR(endinfects)/2` - `r median(endinfects)+IQR(endinfects)/2`) after `r ` years (Figure 1). This corresponds to `r round(100*median(endinfects)/median(popsizemat[,5]),)`% of the Medicare ineligible population. 
  
 ```{r plotcode, echo=FALSE,messages = FALSE,include=FALSE}
 # Create plots of results
@@ -684,7 +684,7 @@ if (savePlots){
 
 ```
 
-**Figure 1** - Annual number of new infections casued by HIV-positive Medicare ineligibles for each simulation. The grey lines represent the baseline simulations while the blue lines are for the expansion of ART to all Medicare ineligibles. The black and dark blue lines show the median number of new infections for the baseline and expanded ART simulations respectively.   
+**Figure 1** - Annual number of new infections caused by HIV-positive Medicare ineligibles for each simulation. The grey lines represent the baseline simulations while the blue lines are for the expansion of ART to all Medicare ineligibles. The black and dark blue lines show the median number of new infections for the baseline and expanded ART simulations respectively.   
 
 ```{r insertyplots1, echo=FALSE, messages = FALSE, warning = FALSE, fig.width=4, fig.height=3}
 if(knitplots){print(simsplot)}
@@ -704,7 +704,7 @@ Providing ART to Medicare ineligibles over `r runyears-1` years is estimated to 
 
 Figure 3 shows the cumulative costs for providing ART to Medicare ineligible people for the next `r runyears-1` years and the savings due to the reduction in infections during this period. The median undiscounted cumulative cost when ART is expanded to all Medicare ineligible PLHIV is \$`r formatC(round(medacost,4),format="d",big.mark=',')` (IQR: \$`r formatC(round(medacost -iqracost/2,4),format="d",big.mark=',')` - \$`r formatC(round(medacost + iqracost/2,4),format="d",big.mark=',')`) (taking the median of the sum for each simulation). The resulting reduction in infections gives a median saving of \$`r formatC(round(medsaving,4),format="d",big.mark=',')` (IQR: \$`r formatC(round(medsaving - iqrsaving/2,4),format="d",big.mark=',')` - \$`r formatC(round(medsaving + iqrsaving/2,4),format="d",big.mark=',')`); Figure 3) in the lifetime treatment costs for newly infected people. When discounting is taken into account, the costs of providing ART reduce to a median \$`r formatC(round(medacostdisc,4),format="d",big.mark=',')` (IQR: \$`r formatC(round(medacostdisc -iqracostdisc/2,4),format="d",big.mark=',')` - \$`r formatC(round(medacostdisc + iqracostdisc/2,4),format="d",big.mark=',')`) and the resulting saving in treatment costs reduces to a median of \$`r formatC(round(medsavingdisc,4),format="d",big.mark=',')` (IQR: \$`r formatC(round(medsavingdisc -iqrsavingdisc/2,4),format="d",big.mark=',')` - \$`r formatC(round(medsavingdisc + iqrsavingdisc/2,4),format="d",big.mark=',')`).
 
-**Figure 3** - Median total costs for providing all Medicare ineligbles with ART and the reduction in lifetime treatment costs for partners of Medicare Ineligibles who acquire infection over `r runyears-1` years. The bars show the interquartile range in total costs across all simulations.
+**Figure 3** - Median total costs for providing all Medicare ineligibles with ART and the reduction in lifetime treatment costs for partners of Medicare Ineligibles who acquire infection over `r runyears-1` years. The bars show the interquartile range in total costs across all simulations.
 
 ```{r insertyplots3, echo=FALSE, messages = FALSE, warning = FALSE, fig.width=6, fig.height=3}
 if(knitplots){print(costplot)}
@@ -718,7 +718,7 @@ options(scipen=0)  # Set back to default
 
 The overall number of new infections per year is calculated by summing the number of new infections caused by MSM and non-MSM population group; i.e. $$I(y) = I_m(y) + I_n(y),$$ where $y$ is the given year.
 
-Letting the index $x$ represent one of the populations groups (and droping $y$ for the time being), the probability of HIV transmission to a HIV-negative sexual partner is given by
+Letting the index $x$ represent one of the populations groups (and dropping $y$ for the time being), the probability of HIV transmission to a HIV-negative sexual partner is given by
 $$\beta'_x = [(1-\theta)\beta_x + \theta(1-\psi)\beta_x + \theta\psi(1-\epsilon_{ART})\beta_x]$$ 
 as ineffective treatment (resulting in unsuppressed virus) has the same transmission probability as no treatment. After some algebra this gives
 $$\beta'_x = (1-\theta\psi\epsilon_{ART})\beta_x.$$ 
@@ -727,7 +727,7 @@ Using this probability, the number of new infections each year $I_x$ is given by
 $$I_x \sim binom(Np_x,\beta'_x).$$ 
 For large N and small $\beta'_x$ this is approximately equal to 
 $$I_x = Np_x\beta'_x = Np_x(1-\theta\psi\epsilon_{ART})\beta_x,$$ 
-and the number of new infections is given by a risk equation. <!--- In the Rmarkdown script there is an option to use the risk equation approach instead of the sampling from a binomial disytribution ---> Given the relatively small population size and the high levels of ART coverage and viral suppression, likely resulting in a small  number of infections, we use the stochastic approach in this anaylsis. 
+and the number of new infections is given by a risk equation. <!--- In the Rmarkdown script there is an option to use the risk equation approach instead of the sampling from a binomial distribution ---> Given the relatively small population size and the high levels of ART coverage and viral suppression, likely resulting in a small  number of infections, we use the stochastic approach in this analysis. 
 
 Adding the population terms together gives the overall number of new infections $I(y)$ in a given year $y$. The cumulative number of new infections in partners of medicare ineligibles over $y$ years is then equal to
 $$\sum_{y = 1}^{years} I(y)$$ 
