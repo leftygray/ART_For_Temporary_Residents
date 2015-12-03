@@ -48,7 +48,7 @@ code/.RData
 .Rhistory
 output/
 docs/report/
-docs/*.docx
+docs/Medicare_ineligibles.docx
 misc/
 docs/manuscript/
 docs/2016_CROI_abstract_rejected/

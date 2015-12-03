@@ -1,6 +1,8 @@
 ### R function to format results
 
-## This function formats data and results into a string showing the value and range
+## This function formats data and results into a string showing the value 
+# and range with a comma designating thousands with rounding to the nearest 100
+# as default
 
 format.data <- function(estimate, lower = NULL, upper = NULL, places = -2, money = FALSE) {
   

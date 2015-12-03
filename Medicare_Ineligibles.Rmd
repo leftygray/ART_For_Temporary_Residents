@@ -12,18 +12,22 @@ bibliography: docs/medicare_ineligibles.bib
 
 This document summarizes a simple analysis to calculate the impact of providing anti-retroviral therapy (ART) to people living with HIV (PLHIV) in Australia who are Medicare ineligible. This analysis uses data from the Australian HIV Observational Database Temporary Residents Access Study (ATRAS) [@petoumenos2013australian].The R code for these calculations is available in the associated Rmarkdown file. The aim of these calculations is to estimate the number of new HIV infections that occur through transmission from Medicare ineligible people to their sexual partners, the cost of providing ART to the Medicare ineligible population, and the potential future cost of providing treatment to partners of Medicare ineligibles who become infected. <!--- This is version v2.0 of the calculations and document. Previous versions are available in a corresponding git repository --->
 
-This document is written in dynamic format using R markdown v2 within R studio 0.98.1056 (using R version 3.1.2). Plots are created using the package ggplot2. Further details are available in the associated Rmarkdown file, which also contains the R code to produce all the results when the markdown is run. Code blocks have been suppressed in the output document. <!--- The document was currently produced using Rmarkdown v2 within Rstudio using `r substr(R.Version()$version.string,1,15)`, knitr, pandoc, and Miktex (for Latex) for producing the associated PDF or Word Document output. The analysis uses the R packages ggplot2, reshape, gridExtra. To update the results the markdown file needs to be loaded in Rstudio or run using the tools separately. ---> 
+This document is written in dynamic format using R markdown v2 within R studio 0.98.1056 (using R version 3.1.2). Plots are created using the package ggplot2. Further details are available in the associated Rmarkdown file, which also contains the R code to produce all the results when the markdown is run. We have suppressed code blocks in the output document. <!--- The document was currently produced using Rmarkdown v2 within Rstudio using `r substr(R.Version()$version.string,1,15)`, knitr, pandoc, and Miktex (for Latex) for producing the associated PDF or Word Document output. The analysis uses the R packages ggplot2, reshape, gridExtra. To update the results the markdown file needs to be loaded in Rstudio or run using the tools separately. ---> 
 
 ```{r initialization,echo = FALSE,messages = FALSE,include=FALSE}
 # Clear workspace
 rm(list=ls()) 
 options(scipen=999)  # To get rid of scientific notation
 
+# Source some useful functions
+source(file.path("code", "format.data.R"), echo=TRUE)
+source(file.path("code", "load.library.R"), echo=TRUE)
+
 # Load libraries use in the analysis.
-require(ggplot2)
-require(reshape2)
-require(gridExtra)
-require(Hmisc)
+load.library(ggplot2)
+load.library(reshape2)
+load.library(gridExtra)
+load.library(Hmisc)
 
 # Before we get started set some overarching variables so we can rerun results instead of generating new ones if necessary. Store outputs 
 # and initialize other script wide varuables.
@@ -42,7 +46,7 @@ loadResults <- TRUE # Set to FALSE to run things a fresh. If TRUE a correspondin
 useSeed <- FALSE  # Use seed in loadVars file to get exactly the same results.
 
 saveFileTag <- " v2.1 Draft"  # Tag for output file names to specify scenarios
-saveVars <- FALSE       # Save input parameters so tehn can be loaded separately
+saveVars <- FALSE       # Save input parameters so they can be loaded separately
 saveResults <- FALSE    # If TRUE saveVars is assumed TRUE as well. 
 
 # Check if output directories exist and create if necessary
@@ -93,10 +97,10 @@ if (!loadVars || !loadResults){
 
 #### Demographics
 
-For this analysis, we consider a population of PLHIV who are Medicare ineligible with the characteristics of people in ATRAS [@petoumenos2013australian]. The overall population is split into  males who are men who have sex with men (MSM) (which, for the purposes of this analysis, we assume are exclusively homosexual) and all those who are not MSM. The proportion of people in each of these populations is based on ATRAS data and assumed constant over time. This compartmentalization of the population is used to distinguish the risk of HIV infection rather than treatment coverage and adherence.
+For this analysis, we consider a population of PLHIV who are Medicare ineligible with the characteristics of people in ATRAS [@petoumenos2013australian]. The overall population is split into  males who are men who have sex with men (MSM) (which, for the purposes of this analysis, we assume are exclusively homosexual) and all those who are not MSM. The proportion of people in each of these populations is based on ATRAS data and assumed constant. We used this compartmentalization of the population to distinguish the risk of HIV infection rather than treatment coverage and adherence.
 
 The number of Medicare ineligibles can change over time with people becoming eligible for Medicare provided ART and new temporary residents entering the population. We represent this movement using a constant growth rate for the population $\pi$ (which is positive for a growing population and negative for a declining population). <!--- In ATRAS approximately 20% of people become medicare eligible and leave the population each year, this would be lower bound on the rate of population change ---> Letting $N(y)$ equal the total population size in year $y$, the number of medicare ineligible people in the population is then given by
-$$N(y) = N(0)\pi^y.$$ For this analysis we assume only a small change in the population over time so the overall population size is relatively constant.
+$$N(y) = N(0)\pi^y.$$ For this analysis, we assume only a small change in the population over time so the overall population size is relatively constant.
 
 #### Clinical characteristics
 
@@ -219,7 +223,7 @@ if (!loadVars && !loadResults){
 ```
 
 
-**Table 1** - Calculation input parameter ranges. Justifications for these parameter ranges are provided in end notes. The simulations used for the calculations take samples from these ranges assuming a uniform distribution. 
+**Table 1** - Calculation input parameter ranges. Endnotes provide justifications for these parameter ranges. The simulations used for the calculations take samples from these ranges assuming a uniform distribution. 
 
 Parameter           | Description                | Range                                        | Reference                
 --------------------|----------------------------|----------------------------------------------|------------------------   
@@ -236,8 +240,8 @@ $\beta_n$ | Annual probability an untreated non-MSM transmits HIV to another per
 $\beta_m$ | Annual probability an untreated MSM transmits HIV to another person |  [`r round(betamRange[1],4)` - `r round(betamRange[2],4)`] |  3  
 $\epsilon_{ART}$ | Efficacy of ART in preventing HIV transmission if virus is suppressed | [`r epsilon_art[1]` - `r epsilon_art[2]`] | 4   
 **Treatment costs** | | |  
-$c_{ART}$ | Average annual undiscounted cost of providing ART to Medicare ineligibles | [\$`r formatC(artcost[1],format="d",big.mark=',')` - \$`r formatC(artcost[2],format="d",big.mark=',')`] | 5   
-$c_{life}$ | Average undiscounted lifetime cost of providing ART post infection | [\$`r formatC(lifecostRange[1],format="d",big.mark=',')` - \$`r formatC(lifecostRange[2],format="d",big.mark=',')`] | 6   
+$c_{ART}$ | Average annual undiscounted cost of providing ART to Medicare ineligibles | [`r format.data(artcost[1], places = 0, money = TRUE)` - `r format.data(artcost[2], places = 0, money = TRUE)`] | 5   
+$c_{life}$ | Average undiscounted lifetime cost of providing ART post infection | [`r format.data(lifecostRange[1], money = TRUE)` - `r format.data(lifecostRange[2], money = TRUE)`] | 6   
 $r_{disc}$ | Discounting rate | `r 100*discRate`% | 7  
 $t_{ART}$ | Average time between infection and initiating ART | [`r timeTreat[1]` - `r timeTreat[2]`] years | 7 
 
@@ -250,11 +254,19 @@ $t_{ART}$ | Average time between infection and initiating ART | [`r timeTreat[1]
 
 4. We assume those with viral suppression have a 96% reduction in transmission to their sexual partners in line with the results from the HPTN-052 trial for those with detectable drug [@cohen2011prevention].   
 
-5.At enrollment, 83% of the ATRAS cohort on ART were taking Tenofovir/Emtrcitabine (Truvada) as the 'backbone' of their regime. This means the vast majority of those on treatment are taking first-line drugs. For this analysis, we assume all patients are on and remain on first-line ART over the period of analysis. From Schneider et. al., the average annual cost of first-line drugs is $10,685 ($6,945-$14,424) [@schneider2014cost]. Using this value, we assume a range in the annual ART cost of \$`r formatC(artcost[1],format="d",big.mark=',')` to \$`r formatC(artcost[2],format="d",big.mark=',')`.
+5.At enrollment, 83% of the ATRAS cohort on ART are taking Tenofovir/Emtrcitabine (Truvada) as the 'backbone' of their regime. This means the vast majority of those on treatment are taking first-line drugs. For this analysis, we assume all patients are on and remain on first-line ART over the period of analysis. From Schneider et. al., the average annual cost of first-line drugs is \$10,685 (\$6,945- \$14,424) [@schneider2014cost]. Using this value, we assume a range in the annual ART cost of \$`r format.data(artcost[1], places = 0)` to \$`r format.data(artcost[2], places = 0)`.
 
-6. If a partner of a Medicare ineligible becomes infected with HIV then they will eventually require care and treatment while they are living in Australia. As we are not tracking their infection progression in this analysis, we use an estimate for the lifetime cost of providing ART. An analysis of the life expectancy of PLHIV in Australia given currently available antiretroviral treatments suggests someone starting treatment in their twenties will be taking ART for around 40 years [@jansson2013currently] spending ~`r yearsFirst` years on first-line drugs,  ~`r yearsSecond` years on second-line drugs, ~`r yearsThird` years on third-line drugs, and the reminder of the time on higher classes of drug. Using the cost estimates from [@schneider2014cost], we assume the annual costs of proving each line of drugs is: \$`r costFirst` for first-line drugs, \$`r costSecond` for second-line drugs, \$`r costThird` for third-line drugs, and \$`r costFourth` for fourth and higher lines of drugs. Multiplying the values for each drug class and summing produces the undiscounted cost presented here. To account for all uncertainties in time on each treatment class and drug costs we assume a range of $\pm$ 25% in the overall undiscounted cost. 
+6. If a partner of a Medicare ineligible becomes infected with HIV then they will eventually require care and treatment while they are living in Australia. As we are not tracking their infection progression in this analysis, we use an estimate for the lifetime cost of providing ART. An analysis of the life expectancy of PLHIV in Australia given currently available antiretroviral treatments suggests someone starting treatment in their twenties will be taking ART for around 40 years [@jansson2013currently] spending ~`r yearsFirst` years on first-line drugs,  ~`r yearsSecond` years on second-line drugs, ~`r yearsThird` years on third-line drugs, and the reminder of the time on higher classes of drug. Using the cost estimates from [@schneider2014cost], we assume the annual costs of proving each line of drugs is
+\$`r format.data(costFirst, places = 0)`
+for first-line drugs,
+\$`r format.data(costSecond, places = 0)` 
+for second-line drugs, 
+\$`r format.data(costThird, places = 0)` 
+for third-line drugs, and 
+\$`r format.data(costFourth, places = 0)`
+for fourth and higher lines of drugs. Multiplying the values for each drug class and summing produces the undiscounted cost presented here. To account for all uncertainties in time on each treatment class and drug costs we assume a range of $\pm$ 25% in the overall undiscounted cost. 
 
-7. To discount future costs of providing ART to people ineligible for Medicare and those who become infected we apply a discount rate of 5% from the year of enrollment in ATRAS for all treatment costs. For discounting purposes we include the time between infection and initiating ART, this is estimated from data on the CD4 count at initiating therapy and estimates for the rate of CD4 decline. In recent years participants in the AHOD cohort have initiated ART at around 350 cells/$\mu$L [@ahod2014report], it is estimated it takes 4.4 years for a person to reach this CD4 count post infection [@jamespaper]. We therefore assume a range of 4 to 5 years for the time between infection and ART initiation. 
+7. To discount future costs of providing ART to people ineligible for Medicare and those who become infected we apply a discount rate of 5% from the year of enrollment in ATRAS for all treatment costs. For discounting purposes we include the time between infection and initiating ART, we estimated this from data on the CD4 count at initiating therapy and estimates for the rate of CD4 decline. In recent years participants in the AHOD cohort have initiated ART at around 350 cells per $\mu$L [@ahod2014report], it is estimated it takes 4.4 years for a person to reach this CD4 count post infection [@jamespaper]. We therefore assume a range of 4 to 5 years for the time between infection and ART initiation. 
 
 
 ```{r vectoriseParams, echo = FALSE,  messages = FALSE}
@@ -594,7 +606,7 @@ iqrnetcostdisc <- IQR(costsSum$totalcost[costsSum$scenario == "costatrasdisc"] -
 
 ```
 
-During the first year after enrollment for ATRAS the number of new infections caused by Medicare ineligible people is estimated to be `r median(startinfects)` (IQR: `r median(startinfects)-IQR(startinfects)/2` - `r median(startinfects)+IQR(startinfects)/2`). 
+During the first year after enrollment for ATRAS, the number of new infections caused by Medicare ineligible people is estimated to be `r median(startinfects)` (IQR: `r median(startinfects)-IQR(startinfects)/2` - `r median(startinfects)+IQR(startinfects)/2`). 
 As a percentage of the infected Medicare-ineligible population, this number of new infections equates to `r round(100*median(startinfects)/median(popsizemat[,1]),1)`% of the population (Figure 1). 
 
 The impact of expanding ATRAS to all Medicare ineligibles and achieving almost universal viral suppression is to reduce annual new infections to a median of `r median(endinfects)` (IQR:`r median(endinfects)-IQR(endinfects)/2` - `r median(endinfects)+IQR(endinfects)/2`) after `r ` years (Figure 1). This corresponds to `r round(100*median(endinfects)/median(popsizemat[,5]),)`% of the Medicare ineligible population. 
@@ -694,15 +706,15 @@ Figure 2 shows the distributions for the cumulative number of new infections in 
 
 **Figure 2** - Total number of number of new infections (left) and the distribution in infections averted (right) over `r runyears-1` years after all HIV-positive people ineligible for Medicare are provided ART.
 
-```{r insertyplots2, echo=FALSE, messages = FALSE, warning = FALSE, fig.width=6, fig.height=3}
+```{r insertyplots2, echo=FALSE, messages = FALSE, warning = FALSE, results = "hide", fig.width=6, fig.height=3}
 if(knitplots){print(grid.arrange(totalplot,avertplot,ncol = 2))}
 ```
 
-Providing ART to Medicare ineligibles over `r runyears-1` years is estimated to have a median undiscounted cost of \$`r formatC(round(medacost,-4),format="d",big.mark=',')` (IQR: \$`r formatC(round(medacost -iqracost/2,4),format="d",big.mark=',')` - \$`r formatC(round(medacost + iqracost/2,4),format="d",big.mark=',')`) and a median discounted cost of \$`r formatC(round(medacostdisc,-4),format="d",big.mark=',')` (IQR: \$`r formatC(round(medacostdisc -iqracostdisc/2,4),format="d",big.mark=',')` - \$`r formatC(round(medacostdisc + iqracostdisc/2,4),format="d",big.mark=',')`). This corresponds to a cost per infection averted of 
-\$`r formatC(round(medcostpiadisc,-4),format="d",big.mark=',')` (IQR: \$`r formatC(round(medcostpiadisc -iqrcostpiadisc/2,4),format="d",big.mark=',')` - \$`r formatC(round(medcostpiadisc + iqrcostpiadisc/2,4),format="d",big.mark=',')`)
+Providing ART to Medicare ineligibles over `r runyears-1` years is estimated to have a median undiscounted cost of \$`r format.data(medacost, places = -4, money = TRUE)` (IQR: \$`r format.data(medacost -iqracost/2, places = -4, money = TRUE)` - \$`r format.data(medacost + iqracost/2, places = -4, money = TRUE)`) and a median discounted cost of \$`r format.data(medacostdisc, places = -4, money = TRUE)` (IQR: \$`r format.data(medacostdisc -iqracostdisc/2, places = -4, money = TRUE)` - \$`r format.data(medacostdisc + iqracostdisc/2, places = -4, money = TRUE)`). This corresponds to a cost per infection averted of 
+\$`r format.data(medcostpiadisc, places = -4, money = TRUE)` (IQR: \$`r format.data(medcostpiadisc -iqrcostpiadisc/2, places = -4, money = TRUE)` - \$`r format.data(medcostpiadisc + iqrcostpiadisc/2, places = -4, money = TRUE)`)
 (with 5% discounting).
 
-Figure 3 shows the cumulative costs for providing ART to Medicare ineligible people for the next `r runyears-1` years and the savings due to the reduction in infections during this period. The median undiscounted cumulative cost when ART is expanded to all Medicare ineligible PLHIV is \$`r formatC(round(medacost,4),format="d",big.mark=',')` (IQR: \$`r formatC(round(medacost -iqracost/2,4),format="d",big.mark=',')` - \$`r formatC(round(medacost + iqracost/2,4),format="d",big.mark=',')`) (taking the median of the sum for each simulation). The resulting reduction in infections gives a median saving of \$`r formatC(round(medsaving,4),format="d",big.mark=',')` (IQR: \$`r formatC(round(medsaving - iqrsaving/2,4),format="d",big.mark=',')` - \$`r formatC(round(medsaving + iqrsaving/2,4),format="d",big.mark=',')`); Figure 3) in the lifetime treatment costs for newly infected people. When discounting is taken into account, the costs of providing ART reduce to a median \$`r formatC(round(medacostdisc,4),format="d",big.mark=',')` (IQR: \$`r formatC(round(medacostdisc -iqracostdisc/2,4),format="d",big.mark=',')` - \$`r formatC(round(medacostdisc + iqracostdisc/2,4),format="d",big.mark=',')`) and the resulting saving in treatment costs reduces to a median of \$`r formatC(round(medsavingdisc,4),format="d",big.mark=',')` (IQR: \$`r formatC(round(medsavingdisc -iqrsavingdisc/2,4),format="d",big.mark=',')` - \$`r formatC(round(medsavingdisc + iqrsavingdisc/2,4),format="d",big.mark=',')`).
+Figure 3 shows the cumulative costs for providing ART to Medicare ineligible people for the next `r runyears-1` years and the savings due to the reduction in infections during this period. The median undiscounted cumulative cost when ART is expanded to all Medicare ineligible PLHIV is \$`r format.data(medacost, places = -4, money = TRUE)` (IQR: \$`r format.data(medacost -iqracost/2, places = -4, money = TRUE)` - \$`r format.data(medacost + iqracost/2, places = -4, money = TRUE)`) (taking the median of the sum for each simulation). The resulting reduction in infections gives a median saving of \$`r format.data(medsaving, places = -4, money = TRUE)` (IQR: \$`r format.data(medsaving - iqrsaving/2, places = -4, money = TRUE)` - \$`r format.data(medsaving + iqrsaving/2, places = -4, money = TRUE)`); Figure 3) in the lifetime treatment costs for newly infected people. When discounting is taken into account, the costs of providing ART reduce to a median \$`r format.data(medacostdisc, places = -4, money = TRUE)` (IQR: \$`r format.data(medacostdisc -iqracostdisc/2, places = -4, money = TRUE)` - \$`r format.data(medacostdisc + iqracostdisc/2, places = -4, money = TRUE)`) and the resulting saving in treatment costs reduces to a median of \$`r format.data(medsavingdisc, places = -4, money = TRUE)` (IQR: \$`r format.data(medsavingdisc -iqrsavingdisc/2, places = -4, money = TRUE)` - \$`r format.data(medsavingdisc + iqrsavingdisc/2, places = -4, money = TRUE)`).
 
 **Figure 3** - Median total costs for providing all Medicare ineligibles with ART and the reduction in lifetime treatment costs for partners of Medicare Ineligibles who acquire infection over `r runyears-1` years. The bars show the interquartile range in total costs across all simulations.
 
