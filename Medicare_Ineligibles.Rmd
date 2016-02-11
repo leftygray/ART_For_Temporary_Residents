@@ -643,9 +643,10 @@ simsplot <- simsplot + ylim(0,round(max(newinfections$totalinfects,newinfections
 simsplot <- simsplot + xlab("Years since start of ATRAS") + ylab("New infections") + opts
 
 # Create a boxplot for cumulative incidence
-totalplot <- ggplot(data = infectsSum,aes(x=scenario,y=newinfections)) +  theme_bw() + geom_boxplot(aes(fill=scenario),width = 0.75,alpha = 0.5)
-totalplot <- totalplot + scale_fill_manual(labels=c("Baseline","ATRAS"),values = c(colourmap[2],colourmap[7]))
-totalplot <- totalplot + xlab("") + ylab("Cumulative infections") + scale_colour_manual(labels=c("Baseline","ATRAS"),values = c(colourmap[2],colourmap[7])) + scale_x_discrete(labels=c("Baseline","ATRAS")) 
+totalplot <- ggplot(data = infectsSum,aes(x=scenario,y=newinfections)) +  
+  theme_bw() + geom_boxplot(aes(fill=scenario),width = 0.75,alpha = 0.5)
+totalplot <- totalplot + scale_fill_manual(labels=c("Status quo","Expanded access"),values = c(colourmap[2],colourmap[7]))
+totalplot <- totalplot + xlab("") + ylab("Cumulative infections") + scale_colour_manual(labels=c("Status quo","Expanded access"),values = c(colourmap[2],colourmap[7])) + scale_x_discrete(labels=c("Status quo","Expanded access")) 
 totalplot <- totalplot + opts + theme(legend.position="none")
 
 # Histogram of averted infections
