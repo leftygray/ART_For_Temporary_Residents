@@ -996,7 +996,7 @@ graphics.off()
 colourmap <- c("#999999","#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7") # Colour blind palette with grey and black 
 
 # Theme for plot variables
-opts <- theme(text = element_text(face = "bold", size = 12, 
+opts <- theme_bw() + theme(text = element_text(face = "bold", size = 12, 
                                   colour = "black"),
   axis.text.x = element_text(face = "plain", size = 10, colour = "black"),
   axis.text.y = element_text(face = "plain", size = 10, colour = "black"),
@@ -1011,65 +1011,109 @@ opts <- theme(text = element_text(face = "bold", size = 12,
   axis.line = element_line(colour = "black")
 )
 
-simsplot <- ggplot(data = newinfections,aes(x=year,group=simulation)) + theme_bw() # Setup data for plot
-simsplot <- simsplot + geom_line(aes(y = totalinfectsbase,colour="Baseline simulations"),size = 1.05) # Plot baseline simulations
-simsplot <- simsplot + geom_line(aes(y = totalinfects,colour="ATRAS simulations"),size = 1.05) # ATRAS simulations
-simsplot <- simsplot + stat_summary(aes(y=totalinfectsbase,group=1),fun.y = median,geom = "line",colour=colourmap[2],size = 1.2) # Median of baseline simulations
-simsplot <- simsplot + stat_summary(aes(y=totalinfects,group=1),fun.y = median,geom = "line",colour=colourmap[7],size = 1.2) # Median of ATRAS simulation
-simsplot <- simsplot + scale_colour_manual("",breaks = c("Baseline simulations","ATRAS simulations"), values = c(colourmap[4],colourmap[1]))
-simsplot <- simsplot + ylim(0,round(max(newinfections$totalinfects,newinfections$totalinfectsbase),-1))
-simsplot <- simsplot + xlab("Years since start of ATRAS") + ylab("New infections") + opts
+simsplot <- ggplot(data = newinfections, 
+                   aes(x = year, group = simulation)) +  
+  geom_line(aes(y = totalinfectsbase,colour="Baseline simulations"), 
+            size = 1.05) + # Baseline simulations
+  geom_line(aes(y = totalinfects,colour="ATRAS simulations"), 
+            size = 1.05) + # ATRAS simulations
+  stat_summary(aes(y = totalinfectsbase, group = 1), fun.y = median,
+               geom = "line", colour = colourmap[2], size = 1.2) + 
+  # Median of baseline simulations
+ stat_summary(aes(y = totalinfects, group = 1), fun.y = median, 
+              geom = "line", colour = colourmap[7], size = 1.2) +
+  # Median of ATRAS simulation
+  scale_colour_manual("", breaks = c("Baseline simulations",
+                                     "ATRAS simulations"), 
+                      values = c(colourmap[4], colourmap[1])) + 
+  ylim(0, round(max(newinfections$totalinfects, 
+                    newinfections$totalinfectsbase), -1)) + 
+  xlab("Years since start of ATRAS") + ylab("New infections") + opts
 
 # Create a boxplot for cumulative incidence
-totalplot <- ggplot(data = infectsSum,aes(x=scenario,y=newinfections)) +  
-  theme_bw() + geom_boxplot(aes(fill=scenario),width = 0.75,alpha = 0.5)
-totalplot <- totalplot + scale_fill_manual(labels=c("Status quo","Expanded access"),values = c(colourmap[2],colourmap[7]))
-totalplot <- totalplot + xlab("") + ylab("Cumulative infections") + scale_colour_manual(labels=c("Status quo","Expanded access"),values = c(colourmap[2],colourmap[7])) + scale_x_discrete(labels=c("Status quo","Expanded access")) 
-totalplot <- totalplot + opts + theme(legend.position="none")
+totalplot <- ggplot(data = infectsSum, 
+                    aes(x = scenario, y = newinfections)) +  
+  geom_boxplot(aes(fill = scenario), width = 0.75, alpha = 0.5) +
+  scale_fill_manual(labels = c("Status quo", "Expanded access"), 
+                    values = c(colourmap[2], colourmap[7])) +
+  xlab("") + ylab("Cumulative infections") + 
+  scale_colour_manual(labels = c("Status quo", "Expanded access"),
+                      values = c(colourmap[2], colourmap[7])) +
+  scale_x_discrete(labels = c("Status quo", "Expanded access")) + 
+  opts + theme(legend.position = "none")
 
 # Histogram of averted infections
-avertplot <- ggplot(data = avertedSum,aes(x=totalaverted)) + theme_bw()
-avertplot <- avertplot + geom_density(alpha = 0.5, fill = colourmap[7])
-avertplot <- avertplot + xlab("Infections averted") + ylab("Density")
-avertplot <- avertplot + opts + theme(legend.position="none")
+avertplot <- ggplot(data = avertedSum,aes(x = totalaverted)) +
+  geom_density(alpha = 0.5, fill = colourmap[7]) +
+  xlab("Infections averted") + ylab("Density") +
+  opts + theme(legend.position = "none")
 
 # Create a plot for total costs 
-costplot <- ggplot(data = costsSum3,aes(x=scenario,y=totalcost/1e6)) + theme_bw() + stat_summary(fun.y="median", geom="bar", aes(fill=scenario,width=0.5),alpha = 0.5)
-costplot <- costplot + scale_fill_manual(values = c(colourmap[7],colourmap[2],colourmap[7],colourmap[2]))
-costplot <- costplot + stat_summary(fun.data="median_hilow",conf.int = 0.5, geom="errorbar",width = 0.2,size=1.1)
-costplot <- costplot + xlab("") + ylab("Millions AUD") + scale_x_discrete(labels=c("Cost of \n providing \n ART","Reduction \n in lifetime \n ART costs", "Cost of \n providing \n ART \n (discounted)","Reduction \n in lifetime \n ART costs \n (discounted)")) 
-costplot <- costplot + ylim(0,120) + geom_vline(aes(xintercept=2.5),linetype = "longdash")
-costplot <- costplot + annotate("text", x = 1.5, y = 100, label = "No discounting") + 
-            annotate("text", x = 3.5, y = 100, label = paste("Discounted ", toString(100*discRate), "%",sep = ""))
-costplot <- costplot + opts + theme(legend.position="none")
+costplot <- ggplot(data = costsSum3, 
+                   aes(x = scenario, y = totalcost / 1e6)) +
+  stat_summary(fun.y = "median", geom="bar", 
+               aes(fill = scenario, width=0.5), alpha = 0.5) +
+  scale_fill_manual(values = 
+                      c(colourmap[7], colourmap[2], 
+                        colourmap[7], colourmap[2])) +
+  stat_summary(fun.data = "median_hilow", conf.int = 0.5, 
+               geom = "errorbar", width = 0.2,size=1.1) + 
+  xlab("") + ylab("Millions AUD") + 
+  scale_x_discrete(labels = c("Cost of \n providing \n ART", 
+    "Reduction \n in lifetime \n ART costs",
+    "Cost of \n providing \n ART \n (discounted)","Reduction \n in lifetime \n ART costs \n (discounted)")) + 
+  ylim(0, 120) + geom_vline(aes(xintercept = 2.5), 
+                            linetype = "longdash") +
+  annotate("text", x = 1.5, y = 100, label = "No discounting") + 
+            annotate("text", x = 3.5, y = 100, 
+                     label = paste("Discounted ", 
+                                   toString(100*discRate), "%", 
+                                   sep = "")) +
+  opts + theme(legend.position = "none")
 
 # Show plots in separate windows and save to file if requested
 if (showPlots || savePlots){
-  windows(width=6,height=4.5); print(simsplot)
+  windows(width = 6, height = 4.5); print(simsplot)
 }
 if (savePlots){
-  dev.print(pdf,file=paste(outputFolder, "/figures/", currTime, " Results_Sims", saveFileTag,".pdf",sep =""))
+  dev.print(pdf, 
+            file = paste(outputFolder, 
+                         "/figures/", currTime, 
+                         " Results_Sims", saveFileTag,".pdf",sep =""))
 }
 
 if (showPlots || savePlots){
-  windows(width=12,height=4.5); print(grid.arrange(totalplot,avertplot,ncol = 2))
+  windows(width = 12, height = 4.5)
+  print(grid.arrange(totalplot, avertplot, ncol = 2))
 }
 if (savePlots){
-  dev.print(pdf,file=paste(outputFolder, "/figures/", currTime, " Results_Total", saveFileTag,".pdf",sep =""))
+  dev.print(pdf,
+            file = paste(outputFolder, "/figures/", currTime, 
+                         "Results_Total", saveFileTag, ".pdf", sep = ""))
 }
 
 if (savePlots){
-  windows(width=6,height=4.5); print(totalplot)
-  dev.print(pdf,file=paste(outputFolder, "/figures/", currTime, " Results_Total-A", saveFileTag,".pdf",sep =""))
-  windows(width=6,height=4.5); print(avertplot)
-dev.print(pdf,file=paste(outputFolder, "/figures/", currTime, " Results_Total-B", saveFileTag,".pdf",sep =""))
+  windows(width = 6, height = 4.5)
+  print(totalplot)
+  dev.print(pdf,
+            file = paste(outputFolder, "/figures/", currTime, 
+                         " Results_Total-A", saveFileTag, ".pdf", 
+                         sep = ""))
+  windows(width = 6, height = 4.5)
+  print(avertplot)
+  dev.print(pdf, file = paste(outputFolder, "/figures/", currTime, 
+                         " Results_Total-B", saveFileTag,
+                         ".pdf", sep = ""))
 }
 
 if (showPlots || savePlots){
-  windows(width=6,height=4.5); print(costplot)
+  windows(width = 6, height = 4.5)
+  print(costplot)
   }
 if (savePlots){
-  dev.print(pdf,file=paste(outputFolder, "/figures/", currTime, " Results_Costs", saveFileTag,".pdf",sep =""))
+  dev.print(pdf, file = paste(outputFolder, "/figures/", currTime, 
+                              " Results_Costs", saveFileTag,
+                              ".pdf", sep = ""))
 }
 
 
