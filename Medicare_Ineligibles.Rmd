@@ -767,7 +767,7 @@ if (!loadResults){
   
   # Summed costs
   newinfections <- newinfections %>%
-    mutate(sumatrascost = costatras + lifecostatra,
+    mutate(sumatrascost = costatras + lifecostatras,
            sumatrascostdisc = costatrasdisc + lifecostatrasdisc)
   
   # Write results to file
@@ -791,69 +791,113 @@ if (!loadResults){
 the calculated values-->
 
 ```{r analysis, echo=FALSE,messages = FALSE,include=FALSE}
-# Do some data manipulation for producing the cumulative number of infections and infections averted.
-infects <- melt(newinfections, id.vars = c("year", "simulation"), 
-                measure.vars = c("totalinfectsbase", "totalinfects"), 
-                variable.name = "scenario", value.name = "newinfections")
+# Do some data manipulation for producing the cumulative number of 
+# infections and infections averted.
+# infects <- melt(newinfections, id.vars = c("year", "simulation"), 
+#                 measure.vars = c("totalinfectsbase", "totalinfects"), 
+#                 variable.name = "scenario", value.name = 
+# "newinfections") 
+# 
+# infectsSum <- aggregate(newinfections ~ simulation + scenario, 
+#                         data = infects, FUN = sum)
 
-infectsSum <- aggregate(newinfections ~ simulation + scenario, 
-                        data = infects, FUN = sum)
+infectsSum <- newinfections %>%
+  select(year, simulation, totalinfectsbase, totalinfects) %>%
+  gather("scenario", "newinfections", 3:4) %>%
+  group_by(scenario, simulation) %>% 
+  summarise(newinfections = sum(newinfections)) %>%
+  select(simulation, everything())
 
-avertedinfects <- melt(newinfections, id.vars = c("year", "simulation"),
-                       measure.vars = c("infectsaverted"),
-                       variable.name="scenario", 
-                       value.name = "totalaverted")
+# avertedinfects <- melt(newinfections, id.vars = c("year", "simulation"),
+#                        measure.vars = c("infectsaverted"),
+#                        variable.name="scenario", 
+#                        value.name = "totalaverted")
+# 
+# avertedSum <- aggregate(totalaverted ~ simulation + scenario, 
+#                         data = avertedinfects, FUN = sum)
 
-avertedSum <- aggregate(totalaverted ~ simulation + scenario, 
-                        data = avertedinfects, FUN = sum)
+avertedSum <- newinfections %>%
+  select(year, simulation, infectsaverted) %>%
+  gather("scenario", "totalaverted", 3) %>%
+  group_by(scenario, simulation) %>% 
+  summarise(totalaverted = sum(totalaverted)) %>%
+  select(simulation, everything()) 
 
-costs <- melt(newinfections, id.vars = c("year", "simulation"), 
-              measure.vars = c("costatras", "costatrasdisc", 
-              "lifecostbase", "lifecostatras", "lifecostbasedisc", 
-              "lifecostatrasdisc"), variable.name = "scenario",
-              value.name="totalcost")
+# costs <- melt(newinfections, id.vars = c("year", "simulation"), 
+#               measure.vars = c("costatras", "costatrasdisc", 
+#               "lifecostbase", "lifecostatras", "lifecostbasedisc", 
+#               "lifecostatrasdisc"), variable.name = "scenario",
+#               value.name="totalcost")
+# 
+# costsSum <- aggregate(totalcost ~ simulation + scenario, 
+#                       data = costs, FUN = sum)
 
-costsSum <- aggregate(totalcost ~ simulation + scenario, 
-                      data = costs, FUN = sum)
+costsSum <- newinfections %>%
+  select(year, simulation, costatras, costatrasdisc, lifecostbase, 
+         lifecostatras, lifecostbasedisc, lifecostatrasdisc) %>%
+  gather("scenario", "totalcost", 3) %>%
+  group_by(scenario, simulation) %>% 
+  summarise(totalcost = sum(totalcost)) %>%
+  select(simulation, everything()) 
 
-costs2 <- melt(newinfections, id.vars = c("year", "simulation"), 
-               measure.vars = c("lifecostbase", "sumatrascost",
-               "lifecostbasedisc", "sumatrascostdisc"), 
-               variable.name = "scenario", value.name = "totalcost")
+# costs2 <- melt(newinfections, id.vars = c("year", "simulation"), 
+#                measure.vars = c("lifecostbase", "sumatrascost",
+#                "lifecostbasedisc", "sumatrascostdisc"), 
+#                variable.name = "scenario", value.name = "totalcost")
+# 
+# costsSum2 <- aggregate(totalcost ~ simulation + scenario, 
+#                        data = costs2, FUN = sum)
 
-costsSum2 <- aggregate(totalcost ~ simulation + scenario, 
-                       data = costs2, FUN = sum)
+costsSum2 <- newinfections %>%
+  select(year, simulation, lifecostbase, sumatrascost, lifecostbasedisc, 
+         sumatrascostdisc) %>%
+  gather("scenario", "totalcost", 3) %>%
+  group_by(scenario, simulation) %>% 
+  summarise(totalcost = sum(totalcost)) %>%
+  select(simulation, everything()) 
 
-costs3 <- melt(newinfections, id.vars = c("year", "simulation"), 
-               measure.vars=c("costatras", "lifecostsaving", 
-                              "costatrasdisc", "lifecostsavingdisc"), 
-               variable.name = "scenario", value.name = "totalcost")
+# costs3 <- melt(newinfections, id.vars = c("year", "simulation"), 
+#                measure.vars=c("costatras", "lifecostsaving", 
+#                               "costatrasdisc", "lifecostsavingdisc"), 
+#                variable.name = "scenario", value.name = "totalcost")
+# 
+# costsSum3 <- aggregate(totalcost ~ simulation + scenario, 
+#                        data = costs3, FUN = sum)
 
-costsSum3 <- aggregate(totalcost ~ simulation + scenario, 
-                       data = costs3, FUN = sum)
+costsSum3 <- newinfections %>%
+  select(year, simulation, costatras, lifecostsaving, costatrasdisc, 
+         lifecostsavingdisc) %>%
+  gather("scenario", "totalcost", 3) %>%
+  group_by(scenario, simulation) %>% 
+  summarise(totalcost = sum(totalcost)) %>%
+  select(simulation, everything())
 
-# Basic summary calculations 
+
+# Basic summary calculations ---------------------------------------------
 
 # Median number of infections at enrolment and after 5 years.
-startinfects <- newinfections$totalinfects[newinfections$year == 0]
-endinfects <- newinfections$totalinfects[newinfections$year == 5]
-startinfectsbase <- newinfections$totalinfectsbase[newinfections$year == 0]
-endinfectsbase <- newinfections$totalinfectsbase[newinfections$year == 5]
+startinfects <- filter(newinfections, year == 0)$totalinfects
+endinfects <- filter(newinfections, year == 5)$totalinfects
+startinfectsbase <- filter(newinfections, year == 0)$totalinfectsbase
+endinfectsbase <- filter(newinfections, year == 5)$totalinfectsbase
 
 # Median infections averted
 avertmed <- median(avertedSum$totalaverted)
 avertiqr <- IQR(avertedSum$totalaverted)
 
 # Costs
-medacost <- median(costsSum$totalcost[costsSum$scenario == "costatras"])
-iqracost <- IQR(costsSum$totalcost[costsSum$scenario == "costatras"])
-medacostdisc <- median(costsSum$totalcost[costsSum$scenario == 
-                                            "costatrasdisc"])
-iqracostdisc <- IQR(costsSum$totalcost[costsSum$scenario == 
-                                         "costatrasdisc"])
+medacost <- median(filter(costsSum, scenario == "costatras")$totalcost)
+iqracost <- IQR(filter(costsSum, scenario == "costatras")$totalcost)
+
+medacostdisc <- median(filter(costsSum, 
+                              scenario == "costatrasdisc")$totalcost)
+iqracostdisc <- IQR(filter(costsSum, 
+                              scenario == "costatrasdisc")$totalcost)
+
 medlbcost <- median(costsSum$totalcost[costsSum$scenario == 
                                          "lifecostbase"])
 iqrlbcost <- IQR(costsSum$totalcost[costsSum$scenario == "lifecostbase"])
+
 medlacost <- median(costsSum$totalcost[costsSum$scenario == 
                                          "lifecostatras"])
 iqrlacost <- IQR(costsSum$totalcost[costsSum$scenario == "lifecostatras"])
