@@ -32,9 +32,9 @@ markdown is run. We have suppressed code blocks in the output document.
 <!--- The document was currently produced using Rmarkdown v2 within Rstudio
 using `r substr(R.Version()$version.string,1,15), knitr, pandoc, and Miktex
 (for Latex) for producing the associated PDF or Word Document output. The 
-analysis uses the R packages ggplot2, reshape, gridExtra. To update the 
-results the markdown file needs to be loaded in Rstudio or run using the 
-tools separately. ---> 
+analysis uses the R packages ggplot2 (version 2.0), dplyr, tidyr, 
+gridExtra. To update the results the markdown file needs to be loaded in 
+Rstudio or run using the tools separately. ---> 
 
 ```{r initialization,echo = FALSE,messages = FALSE,include=FALSE}
 # Clear workspace
@@ -793,34 +793,18 @@ the calculated values-->
 ```{r analysis, echo=FALSE,messages = FALSE,include=FALSE}
 # Do some data manipulation for producing the cumulative number of 
 # infections and infections averted.
-# infects <- melt(newinfections, id.vars = c("year", "simulation"), 
-#                 measure.vars = c("totalinfectsbase", "totalinfects"), 
-#                 variable.name = "scenario", value.name = 
-# "newinfections") 
-# 
-# infectsSum <- aggregate(newinfections ~ simulation + scenario, 
-#                         data = infects, FUN = sum)
 
 infectsSum <- newinfections %>%
   select(year, simulation, totalinfectsbase, totalinfects) %>%
-  gather("scenario", "newinfections", 3:4) %>%
-  group_by(scenario, simulation) %>% 
-  summarise(newinfections = sum(newinfections)) %>%
+  group_by(simulation) %>% 
+  summarise(newinfectionsbase = sum(totalinfectsbase),
+            newinfections = sum(totalinfects)) %>%
   select(simulation, everything())
-
-# avertedinfects <- melt(newinfections, id.vars = c("year", "simulation"),
-#                        measure.vars = c("infectsaverted"),
-#                        variable.name="scenario", 
-#                        value.name = "totalaverted")
-# 
-# avertedSum <- aggregate(totalaverted ~ simulation + scenario, 
-#                         data = avertedinfects, FUN = sum)
 
 avertedSum <- newinfections %>%
   select(year, simulation, infectsaverted) %>%
-  gather("scenario", "totalaverted", 3) %>%
-  group_by(scenario, simulation) %>% 
-  summarise(totalaverted = sum(totalaverted)) %>%
+  group_by(simulation) %>% 
+  summarise(totalaverted = sum(infectsaverted)) %>%
   select(simulation, everything()) 
 
 # costs <- melt(newinfections, id.vars = c("year", "simulation"), 
@@ -835,10 +819,11 @@ avertedSum <- newinfections %>%
 costsSum <- newinfections %>%
   select(year, simulation, costatras, costatrasdisc, lifecostbase, 
          lifecostatras, lifecostbasedisc, lifecostatrasdisc) %>%
-  gather("scenario", "totalcost", 3) %>%
+  gather("scenario", "totalcost", 3:8) %>%
   group_by(scenario, simulation) %>% 
   summarise(totalcost = sum(totalcost)) %>%
-  select(simulation, everything()) 
+  select(simulation, everything()) %>%
+  spread(scenario, totalcost)
 
 # costs2 <- melt(newinfections, id.vars = c("year", "simulation"), 
 #                measure.vars = c("lifecostbase", "sumatrascost",
@@ -851,7 +836,7 @@ costsSum <- newinfections %>%
 costsSum2 <- newinfections %>%
   select(year, simulation, lifecostbase, sumatrascost, lifecostbasedisc, 
          sumatrascostdisc) %>%
-  gather("scenario", "totalcost", 3) %>%
+  gather("scenario", "totalcost", 3:6) %>%
   group_by(scenario, simulation) %>% 
   summarise(totalcost = sum(totalcost)) %>%
   select(simulation, everything()) 
@@ -867,7 +852,7 @@ costsSum2 <- newinfections %>%
 costsSum3 <- newinfections %>%
   select(year, simulation, costatras, lifecostsaving, costatrasdisc, 
          lifecostsavingdisc) %>%
-  gather("scenario", "totalcost", 3) %>%
+  gather("scenario", "totalcost", 3:6) %>%
   group_by(scenario, simulation) %>% 
   summarise(totalcost = sum(totalcost)) %>%
   select(simulation, everything())
@@ -886,88 +871,57 @@ avertmed <- median(avertedSum$totalaverted)
 avertiqr <- IQR(avertedSum$totalaverted)
 
 # Costs
-medacost <- median(filter(costsSum, scenario == "costatras")$totalcost)
-iqracost <- IQR(filter(costsSum, scenario == "costatras")$totalcost)
+medacost <- median(costsSum$costatras)
+iqracost <- IQR(costsSum$costatras)
 
-medacostdisc <- median(filter(costsSum, 
-                              scenario == "costatrasdisc")$totalcost)
-iqracostdisc <- IQR(filter(costsSum, 
-                              scenario == "costatrasdisc")$totalcost)
+medacostdisc <- median(costsSum$costatrasdisc)
+iqracostdisc <- IQR(costsSum$costatrasdisc)
 
-medlbcost <- median(costsSum$totalcost[costsSum$scenario == 
-                                         "lifecostbase"])
-iqrlbcost <- IQR(costsSum$totalcost[costsSum$scenario == "lifecostbase"])
+medlbcost <- median(costsSum$lifecostbase)
+iqrlbcost <- IQR(costsSum$lifecostbase)
 
-medlacost <- median(costsSum$totalcost[costsSum$scenario == 
-                                         "lifecostatras"])
-iqrlacost <- IQR(costsSum$totalcost[costsSum$scenario == "lifecostatras"])
+medlacost <- median(costsSum$lifecostatras)
+iqrlacost <- IQR(costsSum$lifecostatras)
 
-medtotcost <- median(costsSum$totalcost[costsSum$scenario == "costatras"] 
-                     + costsSum$totalcost[costsSum$scenario == 
-                                            "lifecostatras"])
-iqrtotcost <- IQR(costsSum$totalcost[costsSum$scenario == "costatras"] +
-                    costsSum$totalcost[costsSum$scenario == 
-                                         "lifecostatras"])
+medtotcost <- median(costsSum$costatras + costsSum$lifecostatras)
+iqrtotcost <- IQR(costsSum$costatras + costsSum$lifecostatras)
 
-medtotcostdisc<- median(costsSum$totalcost[costsSum$scenario == 
-                                             "costatrasdisc"] + 
-                          costsSum$totalcost[costsSum$scenario == 
-                                               "lifecostatrasdisc"])
-iqrtotcostdisc <- IQR(costsSum$totalcost[costsSum$scenario == 
-                                           "costatrasdisc"] + 
-                        costsSum$totalcost[costsSum$scenario == 
-                                             "lifecostatrasdisc"])
+medtotcostdisc<- median(costsSum$costatrasdisc + 
+                          costsSum$lifecostatrasdisc)
+iqrtotcostdisc <- IQR(costsSum$costatrasdisc + 
+                        costsSum$lifecostatrasdisc)
 
-medtotcostbasedisc<- median(costsSum$totalcost[costsSum$scenario == 
-                                                 "lifecostbasedisc"])
-iqrtotcostbasedisc <- IQR(costsSum$totalcost[costsSum$scenario == 
-                                               "lifecostbasedisc"])
+medtotcostbasedisc<- median(costsSum$lifecostbasedisc)
+iqrtotcostbasedisc <- IQR(costsSum$lifecostbasedisc)
 
 
 # Cost per infection averted
-medcostpia <- median(costsSum$totalcost[costsSum$scenario == 
-  "costatras"] / avertedSum$totalaverted)
-iqrcostpia <- IQR(costsSum$totalcost[costsSum$scenario == 
-  "costatras"] / avertedSum$totalaverted)
+medcostpia <- median(costsSum$costatras / avertedSum$totalaverted)
+iqrcostpia <- IQR(costsSum$costatras / avertedSum$totalaverted)
 
-medcostpiadisc <- median(costsSum$totalcost[costsSum$scenario ==
-  "costatrasdisc"] / avertedSum$totalaverted)
-iqrcostpiadisc <- IQR(costsSum$totalcost[costsSum$scenario == 
-  "costatrasdisc"] / avertedSum$totalaverted)
+medcostpiadisc <- median(costsSum$costatrasdisc / avertedSum$totalaverted)
+iqrcostpiadisc <- IQR(costsSum$costatrasdisc / avertedSum$totalaverted)
 
 # Savings and net costs
-medsaving <- median(costsSum$totalcost[costsSum$scenario == 
-  "lifecostbase"] - costsSum$totalcost[costsSum$scenario == 
-  "lifecostatras"])
+medsaving <- median(costsSum$lifecostbase - costsSum$lifecostatras)
+iqrsaving <- IQR(costsSum$lifecostbase - costsSum$lifecostatras)
 
-iqrsaving <- IQR(costsSum$totalcost[costsSum$scenario == "lifecostbase"] -
-  costsSum$totalcost[costsSum$scenario == "lifecostatras"])
+medsavingdisc <- median(costsSum$lifecostbasedisc -                 
+                          costsSum$lifecostatrasdisc)
+iqrsavingdisc <- IQR(costsSum$lifecostbasedisc -                 
+                          costsSum$lifecostatrasdisc)
 
-medsavingdisc <- median(costsSum$totalcost[costsSum$scenario == 
-  "lifecostbasedisc"] -                 
-    costsSum$totalcost[costsSum$scenario == "lifecostatrasdisc"])
+mednetcost<- median(costsSum$costatras - costsSum$lifecostbase + 
+  costsSum$lifecostatras)
+iqrnetcost <- IQR(costsSum$costatras - costsSum$lifecostbase + 
+  costsSum$lifecostatras)
 
-iqrsavingdisc <- IQR(costsSum$totalcost[costsSum$scenario == 
- "lifecostbasedisc"] - costsSum$totalcost[costsSum$scenario == 
-                                            "lifecostatrasdisc"])
-
-mednetcost<- median(costsSum$totalcost[costsSum$scenario == "costatras"] -
-  costsSum$totalcost[costsSum$scenario == "lifecostbase"] + 
-  costsSum$totalcost[costsSum$scenario == "lifecostatras"])
-
-iqrnetcost <- IQR(costsSum$totalcost[costsSum$scenario == "costatras"] - 
-  costsSum$totalcost[costsSum$scenario == "lifecostbase"] + 
-  costsSum$totalcost[costsSum$scenario == "lifecostatras"])
-
-mednetcostdisc <- median(costsSum$totalcost[costsSum$scenario == 
-  "costatrasdisc"] - costsSum$totalcost[costsSum$scenario == 
-  "lifecostbasedisc"] + costsSum$totalcost[costsSum$scenario == 
-  "lifecostatrasdisc"])
-
-iqrnetcostdisc <- IQR(costsSum$totalcost[costsSum$scenario == 
-  "costatrasdisc"] - costsSum$totalcost[costsSum$scenario == 
-  "lifecostbasedisc"] + costsSum$totalcost[costsSum$scenario == 
-  "lifecostatrasdisc"])
+mednetcostdisc <- median(costsSum$costatrasdisc - 
+                           costsSum$lifecostbasedisc + 
+                           costsSum$lifecostatrasdisc)
+iqrnetcostdisc <- IQR(costsSum$costatrasdisc - 
+                           costsSum$lifecostbasedisc + 
+                           costsSum$lifecostatrasdisc)
 
 ```
 
@@ -1031,7 +985,8 @@ simsplot <- ggplot(data = newinfections,
   xlab("Years since start of ATRAS") + ylab("New infections") + opts
 
 # Create a boxplot for cumulative incidence
-totalplot <- ggplot(data = infectsSum, 
+totalplot <- ggplot(data = gather(infectsSum, "scenario", 
+                                  "newinfections", 2:3), 
                     aes(x = scenario, y = newinfections)) +  
   geom_boxplot(aes(fill = scenario), width = 0.75, alpha = 0.5) +
   scale_fill_manual(labels = c("Status quo", "Expanded access"), 
@@ -1051,17 +1006,18 @@ avertplot <- ggplot(data = avertedSum,aes(x = totalaverted)) +
 # Create a plot for total costs 
 costplot <- ggplot(data = costsSum3, 
                    aes(x = scenario, y = totalcost / 1e6)) +
-  stat_summary(fun.y = "median", geom="bar", 
+  stat_summary(fun.y = "median", geom = "bar", 
                aes(fill = scenario, width=0.5), alpha = 0.5) +
   scale_fill_manual(values = 
                       c(colourmap[7], colourmap[2], 
                         colourmap[7], colourmap[2])) +
-  stat_summary(fun.data = "median_hilow", conf.int = 0.5, 
-               geom = "errorbar", width = 0.2,size=1.1) + 
+  stat_summary(fun.data = "median_hilow", fun.args = list(conf.int = 0.5),
+               geom = "errorbar", width = 0.2, size = 1.1) +
   xlab("") + ylab("Millions AUD") + 
   scale_x_discrete(labels = c("Cost of \n providing \n ART", 
     "Reduction \n in lifetime \n ART costs",
-    "Cost of \n providing \n ART \n (discounted)","Reduction \n in lifetime \n ART costs \n (discounted)")) + 
+    "Cost of \n providing \n ART \n (discounted)",
+    "Reduction \n in lifetime \n ART costs \n (discounted)")) + 
   ylim(0, 120) + geom_vline(aes(xintercept = 2.5), 
                             linetype = "longdash") +
   annotate("text", x = 1.5, y = 100, label = "No discounting") + 
@@ -1073,13 +1029,18 @@ costplot <- ggplot(data = costsSum3,
 
 # Show plots in separate windows and save to file if requested
 if (showPlots || savePlots){
-  windows(width = 6, height = 4.5); print(simsplot)
+  windows(width = 6, height = 4.5)
+  print(simsplot)
 }
 if (savePlots){
-  dev.print(pdf, 
-            file = paste(outputFolder, 
-                         "/figures/", currTime, 
-                         " Results_Sims", saveFileTag,".pdf",sep =""))
+  
+  ggsave(paste(outputFolder, "/figures/", currTime, " Results_Sims",
+               saveFileTag,".pdf",sep =""), 
+         plot = simsplot, width = 6, height = 4.5)
+  # dev.print(pdf, 
+  #           file = paste(outputFolder, 
+  #                        "/figures/", currTime, 
+  #                        " Results_Sims", saveFileTag,".pdf",sep =""))
 }
 
 if (showPlots || savePlots){
@@ -1087,23 +1048,39 @@ if (showPlots || savePlots){
   print(grid.arrange(totalplot, avertplot, ncol = 2))
 }
 if (savePlots){
-  dev.print(pdf,
-            file = paste(outputFolder, "/figures/", currTime, 
-                         "Results_Total", saveFileTag, ".pdf", sep = ""))
+  totalAvertPlot <- grid.arrange(totalplot, avertplot, ncol = 2)
+  ggsave(paste(outputFolder, "/figures/", currTime, "Results_Total", 
+               saveFileTag, ".pdf", sep = ""),
+         plot = totalAvertPlot, width = 12, height = 4.5)
+  
+  # dev.print(pdf,
+  #           file = paste(outputFolder, "/figures/", currTime, 
+  #                        "Results_Total", saveFileTag, ".pdf", sep = ""))
 }
 
 if (savePlots){
-  windows(width = 6, height = 4.5)
-  print(totalplot)
-  dev.print(pdf,
-            file = paste(outputFolder, "/figures/", currTime, 
+  # windows(width = 6, height = 4.5)
+  # print(totalplot)
+  
+  ggsave(paste(outputFolder, "/figures/", currTime, 
                          " Results_Total-A", saveFileTag, ".pdf", 
-                         sep = ""))
-  windows(width = 6, height = 4.5)
-  print(avertplot)
-  dev.print(pdf, file = paste(outputFolder, "/figures/", currTime, 
-                         " Results_Total-B", saveFileTag,
-                         ".pdf", sep = ""))
+                         sep = ""), 
+         plot = totalplot, width = 6, height = 4.5)
+  
+  ggsave(paste(outputFolder, "/figures/", currTime, 
+                         " Results_Total-A", saveFileTag, ".pdf", 
+                         sep = ""), 
+         plot = avertplot, width = 6, height = 4.5)
+  
+  # dev.print(pdf,
+  #           file = paste(outputFolder, "/figures/", currTime, 
+  #                        " Results_Total-A", saveFileTag, ".pdf", 
+  #                        sep = ""))
+  # windows(width = 6, height = 4.5)
+  # print(avertplot)
+  # dev.print(pdf, file = paste(outputFolder, "/figures/", currTime, 
+  #                        " Results_Total-B", saveFileTag,
+  #                        ".pdf", sep = ""))
 }
 
 if (showPlots || savePlots){
@@ -1111,11 +1088,16 @@ if (showPlots || savePlots){
   print(costplot)
   }
 if (savePlots){
-  dev.print(pdf, file = paste(outputFolder, "/figures/", currTime, 
+  
+  ggsave(paste(outputFolder, "/figures/", currTime, 
                               " Results_Costs", saveFileTag,
-                              ".pdf", sep = ""))
+                              ".pdf", sep = ""),
+         plot = costplot, width = 6, height = 4.5)
+  
+  # dev.print(pdf, file = paste(outputFolder, "/figures/", currTime, 
+  #                             " Results_Costs", saveFileTag,
+  #                             ".pdf", sep = ""))
 }
-
 
 ```
 
