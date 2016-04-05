@@ -50,7 +50,6 @@ source(file.path("code", "TidyLongitudinal.R"), echo = TRUE)
 load.library(ggplot2)
 load.library(dplyr)
 load.library(tidyr)
-# load.library(reshape2)
 load.library(gridExtra)
 load.library(Hmisc)
 
@@ -74,8 +73,8 @@ loadFileTag <- "output/15-03-13 13-15-17 v2.1 Draft"
 # regenerate old results. loadFileTag has the structure of date and time + 
 # a file tag " Input.R" and " Results.R" are appended later.
 
-loadVars <- FALSE    # set to FALSE to run things a fresh.
-loadResults <- FALSE # set to FALSE to run things a fresh. If TRUE a 
+loadVars <- TRUE    # set to FALSE to run things a fresh.
+loadResults <- TRUE # set to FALSE to run things a fresh. If TRUE a 
                      # corresponding input file needs to exist and is 
                      # loaded as well.
 
@@ -96,7 +95,7 @@ if (!file.exists(docFolder)){dir.create(file.path("./", docFolder))}
 
 showPlots <- FALSE   # show plots in separate windows
 savePlots <- FALSE    # save plots to file
-knitplots <- FALSE    # insert plots in the produced Rmarkdown document
+knitplots <- TRUE    # insert plots in the produced Rmarkdown document
 
 ```
 
@@ -119,9 +118,9 @@ if (!loadVars || !loadResults){
                        # of followup 
   runyears <- 6        # number of years to run the model. Short term 5 to
                        # 10
-  numsims <- 20      # 1000 number of sampled parameter sets to run
+  numsims <- 1000      # number of sampled parameter sets to run
   stochastic <- TRUE   # run stochastic equations?
-  stochasticSims <- 5 # 20 number of sims for each parameter set if
+  stochasticSims <- 20 # number of sims for each parameter set if
                        # stochastic calculations are set-up
   
   # Generate and store a random integer for set.seed so we can rerun 
@@ -807,15 +806,6 @@ avertedSum <- newinfections %>%
   summarise(totalaverted = sum(infectsaverted)) %>%
   select(simulation, everything()) 
 
-# costs <- melt(newinfections, id.vars = c("year", "simulation"), 
-#               measure.vars = c("costatras", "costatrasdisc", 
-#               "lifecostbase", "lifecostatras", "lifecostbasedisc", 
-#               "lifecostatrasdisc"), variable.name = "scenario",
-#               value.name="totalcost")
-# 
-# costsSum <- aggregate(totalcost ~ simulation + scenario, 
-#                       data = costs, FUN = sum)
-
 costsSum <- newinfections %>%
   select(year, simulation, costatras, costatrasdisc, lifecostbase, 
          lifecostatras, lifecostbasedisc, lifecostatrasdisc) %>%
@@ -825,14 +815,6 @@ costsSum <- newinfections %>%
   select(simulation, everything()) %>%
   spread(scenario, totalcost)
 
-# costs2 <- melt(newinfections, id.vars = c("year", "simulation"), 
-#                measure.vars = c("lifecostbase", "sumatrascost",
-#                "lifecostbasedisc", "sumatrascostdisc"), 
-#                variable.name = "scenario", value.name = "totalcost")
-# 
-# costsSum2 <- aggregate(totalcost ~ simulation + scenario, 
-#                        data = costs2, FUN = sum)
-
 costsSum2 <- newinfections %>%
   select(year, simulation, lifecostbase, sumatrascost, lifecostbasedisc, 
          sumatrascostdisc) %>%
@@ -840,14 +822,6 @@ costsSum2 <- newinfections %>%
   group_by(scenario, simulation) %>% 
   summarise(totalcost = sum(totalcost)) %>%
   select(simulation, everything()) 
-
-# costs3 <- melt(newinfections, id.vars = c("year", "simulation"), 
-#                measure.vars=c("costatras", "lifecostsaving", 
-#                               "costatrasdisc", "lifecostsavingdisc"), 
-#                variable.name = "scenario", value.name = "totalcost")
-# 
-# costsSum3 <- aggregate(totalcost ~ simulation + scenario, 
-#                        data = costs3, FUN = sum)
 
 costsSum3 <- newinfections %>%
   select(year, simulation, costatras, lifecostsaving, costatrasdisc, 
@@ -1033,14 +1007,9 @@ if (showPlots || savePlots){
   print(simsplot)
 }
 if (savePlots){
-  
   ggsave(paste(outputFolder, "/figures/", currTime, " Results_Sims",
                saveFileTag,".pdf",sep =""), 
          plot = simsplot, width = 6, height = 4.5)
-  # dev.print(pdf, 
-  #           file = paste(outputFolder, 
-  #                        "/figures/", currTime, 
-  #                        " Results_Sims", saveFileTag,".pdf",sep =""))
 }
 
 if (showPlots || savePlots){
@@ -1052,16 +1021,9 @@ if (savePlots){
   ggsave(paste(outputFolder, "/figures/", currTime, "Results_Total", 
                saveFileTag, ".pdf", sep = ""),
          plot = totalAvertPlot, width = 12, height = 4.5)
-  
-  # dev.print(pdf,
-  #           file = paste(outputFolder, "/figures/", currTime, 
-  #                        "Results_Total", saveFileTag, ".pdf", sep = ""))
 }
 
 if (savePlots){
-  # windows(width = 6, height = 4.5)
-  # print(totalplot)
-  
   ggsave(paste(outputFolder, "/figures/", currTime, 
                          " Results_Total-A", saveFileTag, ".pdf", 
                          sep = ""), 
@@ -1071,16 +1033,6 @@ if (savePlots){
                          " Results_Total-A", saveFileTag, ".pdf", 
                          sep = ""), 
          plot = avertplot, width = 6, height = 4.5)
-  
-  # dev.print(pdf,
-  #           file = paste(outputFolder, "/figures/", currTime, 
-  #                        " Results_Total-A", saveFileTag, ".pdf", 
-  #                        sep = ""))
-  # windows(width = 6, height = 4.5)
-  # print(avertplot)
-  # dev.print(pdf, file = paste(outputFolder, "/figures/", currTime, 
-  #                        " Results_Total-B", saveFileTag,
-  #                        ".pdf", sep = ""))
 }
 
 if (showPlots || savePlots){
@@ -1088,15 +1040,10 @@ if (showPlots || savePlots){
   print(costplot)
   }
 if (savePlots){
-  
   ggsave(paste(outputFolder, "/figures/", currTime, 
                               " Results_Costs", saveFileTag,
                               ".pdf", sep = ""),
          plot = costplot, width = 6, height = 4.5)
-  
-  # dev.print(pdf, file = paste(outputFolder, "/figures/", currTime, 
-  #                             " Results_Costs", saveFileTag,
-  #                             ".pdf", sep = ""))
 }
 
 ```
