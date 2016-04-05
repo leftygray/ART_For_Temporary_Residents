@@ -2,6 +2,8 @@
 
 This project uses a simple analysis to calculate the impact of providing anti-retroviral therapy (ART) to people living with HIV (PLHIV) in Australia who are medicare ineligible. The analysis uses data from the Australian HIV Observational Database Temporary Residents Access Study (ATRAS). 
 
+![](https://zenodo.org/badge/doi/10.5281/zenodo.48990.svg)
+
 **Author:** Richard T. Gray
 
 **ORCID ID:** orcid.org/0000-0002-2885-0483
@@ -16,6 +18,6 @@ The aim of these calculations is to estimate the number of new HIV infections th
 
 The R code for these calculations is available in a Rmarkdown file:
 
-* Medicare_Ineligibles.rmd — file to produce all the results for the second ATRAS report ([released March 2015](https://kirby.unsw.edu.au/publications/australian-hiv-observational-database-temporary-residents-access-study-atras-mar-2015)).
+* Medicare_Ineligibles.Rmd — file to produce all the results for the second ATRAS report ([released March 2015](https://kirby.unsw.edu.au/publications/australian-hiv-observational-database-temporary-residents-access-study-atras-mar-2015)).
 
-This document is written in dynamic format using R markdown v2 within R studio 0.98.1056 (using R version 3.1.2). Plots are created using the package ggplot2. Further details are available in the associated R markdown file which contains the R code to produce all the results separately when the markdown is run. Code blocks are suppressed in the output documents. Other files in the repository are support files to produce the final output documents. A final version of the document is available in the docs/ folder. 
+This document is written in dynamic format using R markdown v2 within R studio 0.98.1056 (using R version 3.1.2). Plots are created using the package ggplot2 (version 2.0). Further details are available in the associated R markdown file which contains the R code to produce all the results separately when the markdown is run. Code blocks are suppressed in the output documents. Other files in the repository are support files to produce the final output documents. A final version of the document is available in the docs/ folder. 
