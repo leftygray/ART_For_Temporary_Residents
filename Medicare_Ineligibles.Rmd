@@ -42,16 +42,16 @@ rm(list=ls())
 options(scipen=999)  # To get rid of scientific notation
 
 # Source some useful functions
-source(file.path("code", "format.data.R"), echo = TRUE)
-source(file.path("code", "load.library.R"), echo = TRUE)
+source(file.path("code", "FormatData.R"), echo = TRUE)
+source(file.path("code", "LoadLibrary.R"), echo = TRUE)
 source(file.path("code", "TidyLongitudinal.R"), echo = TRUE)
 
 # Load libraries use in the analysis.
-load.library(ggplot2)
-load.library(dplyr)
-load.library(tidyr)
-load.library(gridExtra)
-load.library(Hmisc)
+LoadLibrary(ggplot2)
+LoadLibrary(dplyr)
+LoadLibrary(tidyr)
+LoadLibrary(gridExtra)
+LoadLibrary(Hmisc)
 
 # Before we get started set some overarching variables so we can rerun 
 # results instead of generating new ones if necessary. Store outputs 
@@ -381,8 +381,8 @@ $\beta_n$ | Annual probability an untreated non-MSM transmits HIV to another per
 $\beta_m$ | Annual probability an untreated MSM transmits HIV to another person |  [`r round(betamRange[1],4)` - `r round(betamRange[2],4)`] |  3  
 $\epsilon_{ART}$ | Efficacy of ART in preventing HIV transmission if virus is suppressed | [`r epsilon_art[1]` - `r epsilon_art[2]`] | 4   
 **Treatment costs** | | |  
-$c_{ART}$ | Average annual undiscounted cost of providing ART to Medicare ineligibles | [`r format.data(artcost[1], places = 0, money = TRUE)` - `r format.data(artcost[2], places = 0, money = TRUE)`] | 5   
-$c_{life}$ | Average undiscounted lifetime cost of providing ART post infection | [`r format.data(lifecostRange[1], money = TRUE)` - `r format.data(lifecostRange[2], money = TRUE)`] | 6   
+$c_{ART}$ | Average annual undiscounted cost of providing ART to Medicare ineligibles | [`r FormatData(artcost[1], places = 0, money = TRUE)` - `r FormatData(artcost[2], places = 0, money = TRUE)`] | 5   
+$c_{life}$ | Average undiscounted lifetime cost of providing ART post infection | [`r FormatData(lifecostRange[1], money = TRUE)` - `r FormatData(lifecostRange[2], money = TRUE)`] | 6   
 $r_{disc}$ | Discounting rate | `r 100*discRate`% | 7  
 $t_{ART}$ | Average time between infection and initiating ART | [`r timeTreat[1]` - `r timeTreat[2]`] years | 7 
 
@@ -433,7 +433,7 @@ For this analysis, we assume all patients are on and remain on first-line
 ART over the period of analysis. From Schneider et. al., the average 
 annual cost of first-line drugs is \$10,685 (\$6,945- \$14,424) 
 [@schneider2014cost]. Using this value, we assume a range in the annual
-ART cost of \$`r format.data(artcost[1], places = 0)` to \$`r format.data(artcost[2], places = 0)`.
+ART cost of \$`r FormatData(artcost[1], places = 0)` to \$`r FormatData(artcost[2], places = 0)`.
 
 6. If a partner of a Medicare ineligible becomes infected with HIV then 
 they will eventually require care and treatment while they are living in 
@@ -447,13 +447,13 @@ drugs, ~`r yearsSecond` years on second-line drugs, ~`r yearsThird` years
 on third-line drugs, and the reminder of the time on higher classes of 
 drug. Using the cost estimates from [@schneider2014cost], we assume the
 annual costs of proving each line of drugs is
-\$`r format.data(costFirst, places = 0)`
+\$`r FormatData(costFirst, places = 0)`
 for first-line drugs,
-\$`r format.data(costSecond, places = 0)` 
+\$`r FormatData(costSecond, places = 0)` 
 for second-line drugs, 
-\$`r format.data(costThird, places = 0)` 
+\$`r FormatData(costThird, places = 0)` 
 for third-line drugs, and 
-\$`r format.data(costFourth, places = 0)`
+\$`r FormatData(costFourth, places = 0)`
 for fourth and higher lines of drugs. Multiplying the values for each drug
 class and summing produces the undiscounted cost presented here. To
 account for all uncertainties in time on each treatment class and drug
@@ -1076,36 +1076,36 @@ if(knitplots){print(grid.arrange(totalplot,avertplot,ncol = 2))}
 
 Providing ART to Medicare ineligibles over `r runyears-1` years is 
 estimated to have a median undiscounted cost of 
-`r format.data(medacost, places = -4, money = TRUE)` 
-(IQR: `r format.data(medacost -iqracost/2, places = -4, money = TRUE)` - 
-`r format.data(medacost + iqracost/2, places = -4, money = TRUE)`) 
+`r FormatData(medacost, places = -4, money = TRUE)` 
+(IQR: `r FormatData(medacost -iqracost/2, places = -4, money = TRUE)` - 
+`r FormatData(medacost + iqracost/2, places = -4, money = TRUE)`) 
 and a median discounted cost of 
-`r format.data(medacostdisc, places = -4, money = TRUE)` (IQR: `r format.data(medacostdisc -iqracostdisc/2, places = -4, money = TRUE)` - `r format.data(medacostdisc + iqracostdisc/2, places = -4, money = TRUE)`). 
+`r FormatData(medacostdisc, places = -4, money = TRUE)` (IQR: `r FormatData(medacostdisc -iqracostdisc/2, places = -4, money = TRUE)` - `r FormatData(medacostdisc + iqracostdisc/2, places = -4, money = TRUE)`). 
 This corresponds to a cost per infection averted of 
-`r format.data(medcostpiadisc, places = -4, money = TRUE)` (IQR: `r format.data(medcostpiadisc -iqrcostpiadisc/2, places = -4, money = TRUE)` - `r format.data(medcostpiadisc + iqrcostpiadisc/2, places = -4, money = TRUE)`)
+`r FormatData(medcostpiadisc, places = -4, money = TRUE)` (IQR: `r FormatData(medcostpiadisc -iqrcostpiadisc/2, places = -4, money = TRUE)` - `r FormatData(medcostpiadisc + iqrcostpiadisc/2, places = -4, money = TRUE)`)
 (with 5% discounting).
 
 Figure 3 shows the cumulative costs for providing ART to Medicare 
 ineligible people for the next `r runyears-1` years and the savings due to
 the reduction in infections during this period. The median undiscounted 
-cumulative cost when ART is expanded to all Medicare ineligible PLHIV is `r format.data(medacost, places = -4, money = TRUE)` (IQR: `r format.data(medacost -iqracost/2, places = -4, money = TRUE)` - `r format.data(medacost + iqracost/2, places = -4, money = TRUE)`) (taking 
+cumulative cost when ART is expanded to all Medicare ineligible PLHIV is `r FormatData(medacost, places = -4, money = TRUE)` (IQR: `r FormatData(medacost -iqracost/2, places = -4, money = TRUE)` - `r FormatData(medacost + iqracost/2, places = -4, money = TRUE)`) (taking 
 the median of the sum for each simulation). The resulting reduction in 
 infections gives a median saving of 
-`r format.data(medsaving, places = -4, money = TRUE)` 
+`r FormatData(medsaving, places = -4, money = TRUE)` 
 (IQR: 
-`r format.data(medsaving - iqrsaving/2, places = -4, money = TRUE)` - 
-`r format.data(medsaving + iqrsaving/2, places = -4, money = TRUE)`); 
+`r FormatData(medsaving - iqrsaving/2, places = -4, money = TRUE)` - 
+`r FormatData(medsaving + iqrsaving/2, places = -4, money = TRUE)`); 
 Figure 3) in the lifetime treatment costs for newly infected people. When 
 discounting is taken into account, the costs of providing ART reduce to a 
 median 
-`r format.data(medacostdisc, places = -4, money = TRUE)` 
-(IQR: \$`r format.data(medacostdisc -iqracostdisc/2, places = -4, money = TRUE)` - `r format.data(medacostdisc + iqracostdisc/2, places = -4, money = TRUE)`) 
+`r FormatData(medacostdisc, places = -4, money = TRUE)` 
+(IQR: \$`r FormatData(medacostdisc -iqracostdisc/2, places = -4, money = TRUE)` - `r FormatData(medacostdisc + iqracostdisc/2, places = -4, money = TRUE)`) 
 and the resulting saving in treatment costs reduces to a median of 
-`r format.data(medsavingdisc, places = -4, money = TRUE)` 
+`r FormatData(medsavingdisc, places = -4, money = TRUE)` 
 (IQR: 
-`r format.data(medsavingdisc -iqrsavingdisc/2, places = -4, money = TRUE)`
+`r FormatData(medsavingdisc -iqrsavingdisc/2, places = -4, money = TRUE)`
 - 
-`r format.data(medsavingdisc + iqrsavingdisc/2, places = -4, money = TRUE)`).
+`r FormatData(medsavingdisc + iqrsavingdisc/2, places = -4, money = TRUE)`).
 
 **Figure 3** - Median total costs for providing all Medicare ineligibles 
 with ART and the reduction in lifetime treatment costs for partners of 
