@@ -61,7 +61,6 @@ docFolder <- "docs"
 currTime <- format(Sys.time(), "%y-%m-%d %H-%M-%S") # for appending to 
                                                     # output files
                                                      
-
 # Specifications for loading previously generated results or saving results
 # to file. The basic format of a file string 
 # is date and time + a file tag + " Inputs" or " Results".R. The defaults 
@@ -69,13 +68,15 @@ currTime <- format(Sys.time(), "%y-%m-%d %H-%M-%S") # for appending to
 # specifify the file to load. This is set up so long simulation runs do not
 # need to be repeated to generate the dcoument. 
 
-loadFileTag <-  "output/15-03-13 13-15-17 v2.1 Draft" 
+loadFileTag <-  "" 
+# "output/15-03-13 13-15-17 v2.1 Draft" ATRAS report and submitted paper
+
 # set to empty to run things a fresh. Manually enter file name tag to 
 # regenerate old results. loadFileTag has the structure of date and time +
 # a file tag " Input.R" and " Results.R" are appended later.
 
-loadVars <- TRUE    # set to FALSE to run things a fresh.
-loadResults <- TRUE # set to FALSE to run things a fresh. If TRUE a 
+loadVars <- FALSE    # set to FALSE to run things a fresh.
+loadResults <- FALSE # set to FALSE to run things a fresh. If TRUE a 
                      # corresponding input file needs to exist and is 
                      # loaded as well.
 
@@ -84,9 +85,9 @@ useSeed <- FALSE  # use seed in loadVars file to get exactly the same
 
 saveFileTag <- " v2.2"  # tag for output file names to specify
                               # scenarios
-saveVars <- FALSE       # save input parameters so they can be loaded
+saveVars <- TRUE       # save input parameters so they can be loaded
                         # separately
-saveResults <- FALSE    # if TRUE saveVars is assumed TRUE as well. 
+saveResults <- TRUE    # if TRUE saveVars is assumed TRUE as well. 
 
 # Check if output directories exist and create if necessary
 if (!file.exists(outputFolder)){dir.create(file.path("./", outputFolder))}
@@ -120,7 +121,7 @@ if (!loadVars || !loadResults){
                        # of followup 
   runyears <- 6        # number of years to run the model. Short term 5 to
                        # 10
-  numsims <- 100      # number of sampled parameter sets to run
+  numsims <- 100     # number of sampled parameter sets to run
   stochastic <- TRUE   # run stochastic equations?
   stochasticSims <- 20 # number of sims for each parameter set if
                        # stochastic calculations are set-up
@@ -329,15 +330,16 @@ if (!loadVars && !loadResults){
   costSecond <- 19364
   costThird <- 31411
   costFourth <- 28162
+  monitoringCost <- 3500
   costUncertainty <- 0.25
   
   # Total cost for lifetime of treatment no discounting
-  lifecostYearly <- rep(costFourth, totalLifeYears)
-  lifecostYearly[1:yearsFirst] <- costFirst
+  lifecostYearly <- rep(costFourth, totalLifeYears) + monitoringCost
+  lifecostYearly[1:yearsFirst] <- costFirst + monitoringCost
   lifecostYearly[(yearsFirst + 1):(yearsFirst + yearsSecond)] <-
-    costSecond
+    costSecond + monitoringCost
   lifecostYearly[(yearsFirst + yearsSecond + 1):(yearsFirst + yearsSecond 
-    + yearsThird)] <- costThird
+    + yearsThird)] <- costThird + monitoringCost
   
   # Undiscounted lifetime cost of ART uncertainty
   lifecost <- sum(lifecostYearly)
