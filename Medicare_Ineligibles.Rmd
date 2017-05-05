@@ -60,6 +60,7 @@ outputFolder <- "output"
 docFolder <- "docs"
 currTime <- format(Sys.time(), "%y-%m-%d %H-%M-%S") # for appending to 
                                                     # output files
+                                                     
 
 # Specifications for loading previously generated results or saving results
 # to file. The basic format of a file string 
@@ -68,9 +69,9 @@ currTime <- format(Sys.time(), "%y-%m-%d %H-%M-%S") # for appending to
 # specifify the file to load. This is set up so long simulation runs do not
 # need to be repeated to generate the dcoument. 
 
-loadFileTag <- "output/15-03-13 13-15-17 v2.1 Draft" 
+loadFileTag <-  "output/15-03-13 13-15-17 v2.1 Draft" 
 # set to empty to run things a fresh. Manually enter file name tag to 
-# regenerate old results. loadFileTag has the structure of date and time + 
+# regenerate old results. loadFileTag has the structure of date and time +
 # a file tag " Input.R" and " Results.R" are appended later.
 
 loadVars <- TRUE    # set to FALSE to run things a fresh.
@@ -81,7 +82,7 @@ loadResults <- TRUE # set to FALSE to run things a fresh. If TRUE a
 useSeed <- FALSE  # use seed in loadVars file to get exactly the same 
                   # results.
 
-saveFileTag <- " v2.1 Draft"  # tag for output file names to specify
+saveFileTag <- " v2.2"  # tag for output file names to specify
                               # scenarios
 saveVars <- FALSE       # save input parameters so they can be loaded
                         # separately
@@ -94,8 +95,9 @@ if (!file.exists(docFolder)){dir.create(file.path("./", docFolder))}
 # Produce plots in windows for viewing separately and save plots separately.
 
 showPlots <- FALSE   # show plots in separate windows
-savePlots <- FALSE    # save plots to file
+savePlots <- TRUE    # save plots to file
 knitplots <- TRUE    # insert plots in the produced Rmarkdown document
+saveFormat <- ".png" # Format for saving plots
 
 ```
 
@@ -118,7 +120,7 @@ if (!loadVars || !loadResults){
                        # of followup 
   runyears <- 6        # number of years to run the model. Short term 5 to
                        # 10
-  numsims <- 1000      # number of sampled parameter sets to run
+  numsims <- 100      # number of sampled parameter sets to run
   stochastic <- TRUE   # run stochastic equations?
   stochasticSims <- 20 # number of sims for each parameter set if
                        # stochastic calculations are set-up
@@ -809,7 +811,7 @@ avertedSum <- newinfections %>%
 costsSum <- newinfections %>%
   select(year, simulation, costatras, costatrasdisc, lifecostbase, 
          lifecostatras, lifecostbasedisc, lifecostatrasdisc) %>%
-  gather("scenario", "totalcost", 3:8) %>%
+  gather("scenario", "totalcost", 3:8, factor_key = TRUE) %>%
   group_by(scenario, simulation) %>% 
   summarise(totalcost = sum(totalcost)) %>%
   select(simulation, everything()) %>%
@@ -818,7 +820,7 @@ costsSum <- newinfections %>%
 costsSum2 <- newinfections %>%
   select(year, simulation, lifecostbase, sumatrascost, lifecostbasedisc, 
          sumatrascostdisc) %>%
-  gather("scenario", "totalcost", 3:6) %>%
+  gather("scenario", "totalcost", 3:6, factor_key = TRUE) %>%
   group_by(scenario, simulation) %>% 
   summarise(totalcost = sum(totalcost)) %>%
   select(simulation, everything()) 
@@ -826,10 +828,12 @@ costsSum2 <- newinfections %>%
 costsSum3 <- newinfections %>%
   select(year, simulation, costatras, lifecostsaving, costatrasdisc, 
          lifecostsavingdisc) %>%
-  gather("scenario", "totalcost", 3:6) %>%
+  gather("scenario", "totalcost", 3:6, factor_key = TRUE) %>%
   group_by(scenario, simulation) %>% 
   summarise(totalcost = sum(totalcost)) %>%
   select(simulation, everything())
+
+# costsSum3 used for the final paper
 
 
 # Basic summary calculations ---------------------------------------------
@@ -936,7 +940,8 @@ opts <- theme_bw() + theme(text = element_text(face = "bold", size = 12,
   panel.grid.major = element_blank(), 
   panel.grid.minor = element_blank(), 
   panel.background = element_blank(), 
-  axis.line = element_line(colour = "black")
+  axis.line.x = element_line(colour = "black"),
+  axis.line.y = element_line(colour = "black")
 )
 
 simsplot <- ggplot(data = newinfections, 
@@ -959,8 +964,10 @@ simsplot <- ggplot(data = newinfections,
   xlab("Years since start of ATRAS") + ylab("New infections") + opts
 
 # Create a boxplot for cumulative incidence
+
 totalplot <- ggplot(data = gather(infectsSum, "scenario", 
-                                  "newinfections", 2:3), 
+                                  "newinfections", 2:3, 
+                                  factor_key = TRUE), 
                     aes(x = scenario, y = newinfections)) +  
   geom_boxplot(aes(fill = scenario), width = 0.75, alpha = 0.5) +
   scale_fill_manual(labels = c("Status quo", "Expanded access"), 
@@ -972,7 +979,7 @@ totalplot <- ggplot(data = gather(infectsSum, "scenario",
   opts + theme(legend.position = "none")
 
 # Histogram of averted infections
-avertplot <- ggplot(data = avertedSum,aes(x = totalaverted)) +
+avertplot <- ggplot(data = avertedSum, aes(x = totalaverted)) +
   geom_density(alpha = 0.5, fill = colourmap[7]) +
   xlab("Infections averted") + ylab("Density") +
   opts + theme(legend.position = "none")
@@ -1008,7 +1015,7 @@ if (showPlots || savePlots){
 }
 if (savePlots){
   ggsave(paste(outputFolder, "/figures/", currTime, " Results_Sims",
-               saveFileTag,".pdf",sep =""), 
+               saveFileTag, saveFormat, sep =""), 
          plot = simsplot, width = 6, height = 4.5)
 }
 
@@ -1019,18 +1026,18 @@ if (showPlots || savePlots){
 if (savePlots){
   totalAvertPlot <- grid.arrange(totalplot, avertplot, ncol = 2)
   ggsave(paste(outputFolder, "/figures/", currTime, "Results_Total", 
-               saveFileTag, ".pdf", sep = ""),
+               saveFileTag, saveFormat, sep = ""),
          plot = totalAvertPlot, width = 12, height = 4.5)
 }
 
 if (savePlots){
   ggsave(paste(outputFolder, "/figures/", currTime, 
-                         " Results_Total-A", saveFileTag, ".pdf", 
+                         " Results_Total-A", saveFileTag, saveFormat, 
                          sep = ""), 
          plot = totalplot, width = 6, height = 4.5)
   
   ggsave(paste(outputFolder, "/figures/", currTime, 
-                         " Results_Total-A", saveFileTag, ".pdf", 
+                         " Results_Total-B", saveFileTag, saveFormat, 
                          sep = ""), 
          plot = avertplot, width = 6, height = 4.5)
 }
@@ -1042,7 +1049,7 @@ if (showPlots || savePlots){
 if (savePlots){
   ggsave(paste(outputFolder, "/figures/", currTime, 
                               " Results_Costs", saveFileTag,
-                              ".pdf", sep = ""),
+                              saveFormat, sep = ""),
          plot = costplot, width = 6, height = 4.5)
 }
 
@@ -1118,6 +1125,7 @@ if(knitplots){print(costplot)}
 
 ```{r tidyup,echo = FALSE}
 options(scipen=0)  # Set back to default
+set.seed(NULL)
 ```
 
 ### Appendix: Details of calculations
