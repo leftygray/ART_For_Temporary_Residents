@@ -330,7 +330,7 @@ if (!loadVars && !loadResults){
   costSecond <- 19364
   costThird <- 31411
   costFourth <- 28162
-  monitoringCost <- 3500
+  monitoringCost <- 4000
   costUncertainty <- 0.25
   
   # Total cost for lifetime of treatment no discounting
@@ -857,11 +857,22 @@ iqracost <- IQR(costsSum$costatras)
 medacostdisc <- median(costsSum$costatrasdisc)
 iqracostdisc <- IQR(costsSum$costatrasdisc)
 
+# Lifetime costs
 medlbcost <- median(costsSum$lifecostbase)
 iqrlbcost <- IQR(costsSum$lifecostbase)
 
 medlacost <- median(costsSum$lifecostatras)
 iqrlacost <- IQR(costsSum$lifecostatras)
+
+medlbcostdisc <- median(costsSum$lifecostbasedisc)
+iqrlbcostdisc <- IQR(costsSum$lifecostbasedisc)
+
+medlacostdisc<- median(costsSum$lifecostatrasdisc)
+iqrlacostdisc <- IQR(costsSum$lifecostatrasdisc)
+
+# total costs
+medtotcostbasedisc<- median(costsSum$lifecostbasedisc)
+iqrtotcostbasedisc <- IQR(costsSum$lifecostbasedisc)
 
 medtotcost <- median(costsSum$costatras + costsSum$lifecostatras)
 iqrtotcost <- IQR(costsSum$costatras + costsSum$lifecostatras)
@@ -870,10 +881,6 @@ medtotcostdisc<- median(costsSum$costatrasdisc +
                           costsSum$lifecostatrasdisc)
 iqrtotcostdisc <- IQR(costsSum$costatrasdisc + 
                         costsSum$lifecostatrasdisc)
-
-medtotcostbasedisc<- median(costsSum$lifecostbasedisc)
-iqrtotcostbasedisc <- IQR(costsSum$lifecostbasedisc)
-
 
 # Cost per infection averted
 medcostpia <- median(costsSum$costatras / avertedSum$totalaverted)
@@ -921,6 +928,9 @@ median of `r median(endinfects)` (IQR:
 This corresponds to 
 `r round(100*median(endinfects)/median(popsizemat[,5]),)`% of the Medicare
 ineligible population. 
+
+
+ 
  
 ```{r plotcode, echo=FALSE,messages = FALSE,include=FALSE}
 # Create plots of results
@@ -1062,7 +1072,109 @@ Medicare ineligibles for each simulation. The grey lines represent the
 baseline simulations while the blue lines are for the expansion of ART to 
 all Medicare ineligibles. The black and dark blue lines show the median 
 number of new infections for the baseline and expanded ART simulations 
-respectively.   
+respectively.  
+
+```{r tablecode,echo=FALSE,messages = FALSE,include=FALSE}
+# Create a table of summary results
+summaryResults <- data.frame(matrix(ncol = 3, nrow = 9))
+colnames(summaryResults) <- c("indicator", "status_quo", 
+                              "expanded_access")                  
+
+# Fill in results
+
+# Infections 
+summaryResults[1, ] <- c("Annual infections after 5 years", 
+  FormatData(median(endinfectsbase),
+             median(endinfectsbase)-IQR(endinfectsbase)/2, 
+             median(endinfectsbase)+IQR(endinfectsbase)/2, places = 1),
+  FormatData(median(endinfects), 
+             median(endinfects)-IQR(endinfects)/2, 
+             median(endinfects)+IQR(endinfects)/2, 
+             places = 1))
+
+cumInfectsBase <- infectsSum$newinfectionsbase
+cumInfects <- infectsSum$newinfections
+
+summaryResults[2, ] <- c("Cumulative infections", 
+  FormatData(median(cumInfectsBase),
+             median(cumInfectsBase)-IQR(cumInfectsBase)/2, 
+             median(cumInfectsBase)+IQR(cumInfectsBase)/2, places = 1),
+  FormatData(median(cumInfects), 
+             median(cumInfects)-IQR(cumInfects)/2, 
+             median(cumInfects)+IQR(cumInfects)/2, 
+             places = 1))
+
+summaryResults[3, ] <- c("Infections averted", 
+                         "NA",
+  FormatData(avertmed, 
+             avertmed-avertiqr/2, 
+             avertmed+avertiqr/2, 
+             places = 1))
+
+# Undiscounted costs
+summaryResults[4, ] <- c("Cost providing ART (undiscounted)", 
+  "NA",
+  FormatData(medacost, 
+             medacost-iqracost/2, 
+             medacost+iqracost/2, 
+             money = TRUE))
+
+summaryResults[5, ] <- c("Lifetime care and ART costs (undiscounted)", 
+  FormatData(medlbcost, 
+             medlbcost-iqrlbcost/2, 
+             medlbcost+iqrlbcost/2, 
+             money = TRUE),
+  FormatData(medlacost, 
+             medlacost-iqrlacost/2, 
+             medlacost+iqrlacost/2, 
+             money = TRUE))
+
+summaryResults[6, ] <- c("Reduction in lifetime ART costs (undiscounted)", 
+  "NA",
+  FormatData(medsaving, 
+             medsaving-iqrsaving/2, 
+             medsaving+iqrsaving/2, 
+             money = TRUE))
+
+# Discounted costs
+summaryResults[7, ] <- c("Cost providing ART(discounted 5%)", 
+  "NA",
+  FormatData(medacostdisc, 
+             medacostdisc-iqracostdisc/2, 
+             medacostdisc+iqracostdisc/2, 
+             money = TRUE))
+
+summaryResults[8, ] <- c("Lifetime care and ART costs (discounted 5%)", 
+  FormatData(medacost, 
+             medacost-iqracost/2, 
+             medacost+iqracost/2, 
+             money = TRUE),
+  FormatData(medacost, 
+             medacost-iqracost/2, 
+             medacost+iqracost/2, 
+             money = TRUE))
+
+summaryResults[9, ] <- c("Reduction in lifetime ART costs (discounted 5%)",
+  "NA",
+  FormatData(medsavingdisc, 
+             medsavingdisc-iqrsavingdisc/2, 
+             medsavingdisc+iqrsavingdisc/2, 
+             money = TRUE))
+
+# Final colume names
+colnames(summaryResults) <- c("Indicator", 
+                              "Status-quo scenario \n (median, IQR)", 
+                              "Expanded access scenario \n (median, IQR)")
+
+```
+ 
+**Table 1** - Summary results for status-quo scenario and the expanded 
+access scenario. The results show the median and inter-quartile range (IQR)
+of all simulations for each scenario. NA = not applicable.
+
+```{r inserttable1, echo=FALSE, messages = FALSE, warning = FALSE}
+kable(summaryResults, align = c("l", "c", "c")
+```
 
 ```{r insertyplots1, echo=FALSE, messages = FALSE, warning = FALSE, fig.width=4, fig.height=3}
 if(knitplots){print(simsplot)}
@@ -1108,7 +1220,7 @@ Figure 3) in the lifetime treatment costs for newly infected people. When
 discounting is taken into account, the costs of providing ART reduce to a 
 median 
 `r FormatData(medacostdisc, places = -4, money = TRUE)` 
-(IQR: \$`r FormatData(medacostdisc -iqracostdisc/2, places = -4, money = TRUE)` - `r FormatData(medacostdisc + iqracostdisc/2, places = -4, money = TRUE)`) 
+(IQR: `r FormatData(medacostdisc -iqracostdisc/2, places = -4, money = TRUE)` - `r FormatData(medacostdisc + iqracostdisc/2, places = -4, money = TRUE)`) 
 and the resulting saving in treatment costs reduces to a median of 
 `r FormatData(medsavingdisc, places = -4, money = TRUE)` 
 (IQR: 
