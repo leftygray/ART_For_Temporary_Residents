@@ -52,6 +52,7 @@ LoadLibrary(dplyr)
 LoadLibrary(tidyr)
 LoadLibrary(gridExtra)
 LoadLibrary(Hmisc)
+LoadLibrary(knitr)
 
 # Before we get started set some overarching variables so we can rerun 
 # results instead of generating new ones if necessary. Store outputs 
@@ -121,7 +122,7 @@ if (!loadVars || !loadResults){
                        # of followup 
   runyears <- 6        # number of years to run the model. Short term 5 to
                        # 10
-  numsims <- 100     # number of sampled parameter sets to run
+  numsims <- 1000      # number of sampled parameter sets to run
   stochastic <- TRUE   # run stochastic equations?
   stochasticSims <- 20 # number of sims for each parameter set if
                        # stochastic calculations are set-up
@@ -309,8 +310,9 @@ if (!loadVars && !loadResults){
   
   # ART costs -----------------------------------------------------------
   
-  artcost <- c(7000, 15000) # for Medicare ineligibles. Assumed everyone 
-                            # is on first line ART
+  artcost <- c(10000, 20000) # for Medicare ineligibles. Assumed everyone 
+                            # is on first line ART + monitoring cost range
+                            # c(7000, 15000) + c(3000, 5000)
   
   # Calculation of lifetime cost of providing ART to those who become
   # infected
@@ -330,21 +332,25 @@ if (!loadVars && !loadResults){
   costSecond <- 19364
   costThird <- 31411
   costFourth <- 28162
-  monitoringCost <- 4000
   costUncertainty <- 0.25
   
+  monitoringCostLower <- 3000
+  monitoringCostUpper <- 5000
+  
   # Total cost for lifetime of treatment no discounting
-  lifecostYearly <- rep(costFourth, totalLifeYears) + monitoringCost
-  lifecostYearly[1:yearsFirst] <- costFirst + monitoringCost
+  lifecostYearly <- rep(costFourth, totalLifeYears)
+  lifecostYearly[1:yearsFirst] <- costFirst
   lifecostYearly[(yearsFirst + 1):(yearsFirst + yearsSecond)] <-
-    costSecond + monitoringCost
+    costSecond 
   lifecostYearly[(yearsFirst + yearsSecond + 1):(yearsFirst + yearsSecond 
-    + yearsThird)] <- costThird + monitoringCost
+    + yearsThird)] <- costThird
   
   # Undiscounted lifetime cost of ART uncertainty
   lifecost <- sum(lifecostYearly)
   lifecostRange <- c((1 - costUncertainty) * lifecost, 
                      (1 + costUncertainty) * lifecost) 
+  lifecostRange <- lifecostRange + totalLifeYears * c(monitoringCostLower,
+                                                      monitoringCostUpper)
   
   # Discounting rate
   discRate <- 0.05       # discounting rate
@@ -385,8 +391,8 @@ $\beta_n$ | Annual probability an untreated non-MSM transmits HIV to another per
 $\beta_m$ | Annual probability an untreated MSM transmits HIV to another person |  [`r round(betamRange[1],4)` - `r round(betamRange[2],4)`] |  3  
 $\epsilon_{ART}$ | Efficacy of ART in preventing HIV transmission if virus is suppressed | [`r epsilon_art[1]` - `r epsilon_art[2]`] | 4   
 **Treatment costs** | | |  
-$c_{ART}$ | Average annual undiscounted cost of providing ART to Medicare ineligibles | [`r FormatData(artcost[1], places = 0, money = TRUE)` - `r FormatData(artcost[2], places = 0, money = TRUE)`] | 5   
-$c_{life}$ | Average undiscounted lifetime cost of providing ART post infection | [`r FormatData(lifecostRange[1], money = TRUE)` - `r FormatData(lifecostRange[2], money = TRUE)`] | 6   
+$c_{ART}$ | Average annual undiscounted cost of providing care and ART to Medicare ineligibles (including monitoring costs) | [`r FormatData(artcost[1], places = 0, money = TRUE)` - `r FormatData(artcost[2], places = 0, money = TRUE)`] | 5   
+$c_{life}$ | Average undiscounted lifetime cost of providing care and ART post infection (including monitoring costs)| [`r FormatData(lifecostRange[1], money = TRUE)` - `r FormatData(lifecostRange[2], money = TRUE)`] | 6   
 $r_{disc}$ | Discounting rate | `r 100*discRate`% | 7  
 $t_{ART}$ | Average time between infection and initiating ART | [`r timeTreat[1]` - `r timeTreat[2]`] years | 7 
 
@@ -929,9 +935,6 @@ This corresponds to
 `r round(100*median(endinfects)/median(popsizemat[,5]),)`% of the Medicare
 ineligible population. 
 
-
- 
- 
 ```{r plotcode, echo=FALSE,messages = FALSE,include=FALSE}
 # Create plots of results
 graphics.off()
@@ -1074,6 +1077,11 @@ all Medicare ineligibles. The black and dark blue lines show the median
 number of new infections for the baseline and expanded ART simulations 
 respectively.  
 
+```{r insertyplots1, echo=FALSE, messages = FALSE, warning = FALSE, fig.width=4, fig.height=3}
+if(knitplots){print(simsplot)}
+```
+
+
 ```{r tablecode,echo=FALSE,messages = FALSE,include=FALSE}
 # Create a table of summary results
 summaryResults <- data.frame(matrix(ncol = 3, nrow = 9))
@@ -1163,8 +1171,8 @@ summaryResults[9, ] <- c("Reduction in lifetime ART costs (discounted 5%)",
 
 # Final colume names
 colnames(summaryResults) <- c("Indicator", 
-                              "Status-quo scenario \n (median, IQR)", 
-                              "Expanded access scenario \n (median, IQR)")
+                              "Status-quo scenario (median, IQR)", 
+                              "Expanded access scenario (median, IQR)")
 
 ```
  
@@ -1172,13 +1180,10 @@ colnames(summaryResults) <- c("Indicator",
 access scenario. The results show the median and inter-quartile range (IQR)
 of all simulations for each scenario. NA = not applicable.
 
-```{r inserttable1, echo=FALSE, messages = FALSE, warning = FALSE}
-kable(summaryResults, align = c("l", "c", "c")
+```{r inserttable1, echo=FALSE, messages = FALSE, warning = FALSE, results = "asis"}
+kable(summaryResults, align = c("l", "c", "c"))
 ```
 
-```{r insertyplots1, echo=FALSE, messages = FALSE, warning = FALSE, fig.width=4, fig.height=3}
-if(knitplots){print(simsplot)}
-```
 
 Figure 2 shows the distributions for the cumulative number of new 
 infections in partners of Medicare ineligibles for the baseline scenario 
