@@ -69,26 +69,28 @@ currTime <- format(Sys.time(), "%y-%m-%d %H-%M-%S") # for appending to
 # specifify the file to load. This is set up so long simulation runs do not
 # need to be repeated to generate the dcoument. 
 
-loadFileTag <-  "" 
+loadFileTag <-  "output/17-05-07 21-48-03 v2.2" 
+# "output/17-05-07 22-04-59 v2.2" Supplementary results short time between infection and diagnosis
+# "output/17-05-07 21-48-03 v2.2" Resubmitted paper
 # "output/15-03-13 13-15-17 v2.1 Draft" ATRAS report and submitted paper
 
 # set to empty to run things a fresh. Manually enter file name tag to 
 # regenerate old results. loadFileTag has the structure of date and time +
 # a file tag " Input.R" and " Results.R" are appended later.
 
-loadVars <- FALSE    # set to FALSE to run things a fresh.
-loadResults <- FALSE # set to FALSE to run things a fresh. If TRUE a 
+loadVars <- TRUE    # set to FALSE to run things a fresh.
+loadResults <- TRUE # set to FALSE to run things a fresh. If TRUE a 
                      # corresponding input file needs to exist and is 
                      # loaded as well.
 
-useSeed <- FALSE  # use seed in loadVars file to get exactly the same 
+useSeed <- TRUE  # use seed in loadVars file to get exactly the same 
                   # results.
 
 saveFileTag <- " v2.2"  # tag for output file names to specify
                               # scenarios
-saveVars <- TRUE       # save input parameters so they can be loaded
+saveVars <- FALSE       # save input parameters so they can be loaded
                         # separately
-saveResults <- TRUE    # if TRUE saveVars is assumed TRUE as well. 
+saveResults <- FALSE    # if TRUE saveVars is assumed TRUE as well. 
 
 # Check if output directories exist and create if necessary
 if (!file.exists(outputFolder)){dir.create(file.path("./", outputFolder))}
@@ -356,6 +358,7 @@ if (!loadVars && !loadResults){
   discRate <- 0.05       # discounting rate
   timeTreat <- c(4, 5)   # time between infection and treatment where 
                          # discounting would occur 
+                         # Supplementary results use c(2, 4)
   
   # Weighted total cost for lifetime treatment with discounting. More
   # complicated equation as it depends on the year so is defined below
@@ -432,18 +435,34 @@ and non-MSM taking ART, around 90% have an undetectable viral load
 into the equation above and assuming $\pm$ 25% uncertainty produces the 
 values of $\beta_n$ and $\beta_m$.   
 
-4. We assume those with viral suppression have a 96% reduction in 
-transmission to their sexual partners in line with the results from the 
-HPTN-052 trial for those with detectable drug [@cohen2011prevention].   
+4.	We assume those with viral suppression have a 90-99% reduction in 
+transmission to their sexual partners. This assumption is in line with the 
+results from the HPTN-052 trial for those with detectable drug 
+[@cohen2011prevention] and the recent PARTNER study which recorded zero HIV
+transmissions from 1166 HIV+ people to their sexual partners (though the 
+upper 95% confidence interval was 0.84, 0.88, and 0.97 per 100 couple-years
+for MSM, heterosexual males, and heterosexual females respectively) 
+[@rodger2016sexual]. 
 
 5.At enrollment, 83% of the ATRAS cohort on ART are taking 
 Tenofovir/Emtrcitabine (Truvada) as the 'backbone' of their regime. This 
 means the vast majority of those on treatment are taking first-line drugs.
 For this analysis, we assume all patients are on and remain on first-line 
-ART over the period of analysis. From Schneider et. al., the average 
-annual cost of first-line drugs is \$10,685 (\$6,945- \$14,424) 
-[@schneider2014cost]. Using this value, we assume a range in the annual
-ART cost of \$`r FormatData(artcost[1], places = 0)` to \$`r FormatData(artcost[2], places = 0)`.
+ART over the period of analysis and undertake annual monitoring of their 
+infection. From Schneider et al., the average annual cost of first-line
+drugs in Australia is \$10,685 (\$6,945- \$14,424) [@schneider2014cost]. 
+Estimated annual medical costs for people living with HIV were also 
+estimated in Schneider et al. by CD4 count. Annual medical care and 
+infection monitoring for HIV+ people with CD4 $\ge$ 500 cells/$\mu$L, 
+CD4 350-499 cells/$\mu$L, CD4 $\ge$ 200-349 cells/$\mu$L, and CD4 < 200 
+cells/$\mu$L was estimated to equal A\$3,097, \$4,402, \$4,762, and
+\$7,883, respectively. In recent years patients in the AHOD cohort have 
+initiated ART at around 350 cells per $\mu$L [@petoumenos2013australian]. 
+We therefore assume all patients have a CD4 count $\ge$ 200 cells/$\mu$L 
+and the associted annual monitoring costs to range from \$3,000 to $5,000. 
+Using these values, we assume a range in the annual
+ART cost (including monitoring) of \$`r FormatData(artcost[1], places = 0)`
+to \$`r FormatData(artcost[2], places = 0)`.
 
 6. If a partner of a Medicare ineligible becomes infected with HIV then 
 they will eventually require care and treatment while they are living in 
@@ -465,9 +484,11 @@ for second-line drugs,
 for third-line drugs, and 
 \$`r FormatData(costFourth, places = 0)`
 for fourth and higher lines of drugs. Multiplying the values for each drug
-class and summing produces the undiscounted cost presented here. To
+class and summing produces the undiscounted treatment cost. To
 account for all uncertainties in time on each treatment class and drug
 costs we assume a range of $\pm$ 25% in the overall undiscounted cost. 
+Finally we added the annual monitoring cost ranging from \$3,000 to $5,000 
+as described in footnote 4 to produce the undiscounted cost presented here.
 
 7. To discount future costs of providing ART to people ineligible for 
 Medicare and those who become infected we apply a discount rate of 5% from
@@ -1176,14 +1197,13 @@ colnames(summaryResults) <- c("Indicator",
 
 ```
  
-**Table 1** - Summary results for status-quo scenario and the expanded 
+**Table 2** - Summary results for status-quo scenario and the expanded 
 access scenario. The results show the median and inter-quartile range (IQR)
 of all simulations for each scenario. NA = not applicable.
 
 ```{r inserttable1, echo=FALSE, messages = FALSE, warning = FALSE, results = "asis"}
 kable(summaryResults, align = c("l", "c", "c"))
 ```
-
 
 Figure 2 shows the distributions for the cumulative number of new 
 infections in partners of Medicare ineligibles for the baseline scenario 
