@@ -14,7 +14,7 @@ This document summarizes a simple analysis to calculate the impact of
 providing anti-retroviral therapy (ART) to people living with HIV (PLHIV) 
 in Australia who are Medicare ineligible. This analysis uses data from the 
 Australian HIV Observational Database Temporary Residents Access Study 
-(ATRAS) [@petoumenos2013australian].The R code for these calculations is 
+(ATRAS) [@petoumenos2013australian]. The R code for these calculations is 
 available in the associated Rmarkdown file. The aim of these calculations 
 is to estimate the number of new HIV infections that occur through 
 transmission from Medicare ineligible people to their sexual partners, the 
@@ -69,28 +69,27 @@ currTime <- format(Sys.time(), "%y-%m-%d %H-%M-%S") # for appending to
 # specifify the file to load. This is set up so long simulation runs do not
 # need to be repeated to generate the dcoument. 
 
-loadFileTag <-  "output/17-05-07 22-04-59 v2.2" 
+loadFileTag <-  "" 
 # "output/17-05-07 22-04-59 v2.2" Supplementary results short time between infection and diagnosis
-# "output/17-05-07 21-48-03 v2.2" Resubmitted paper
-# "output/15-03-13 13-15-17 v2.1 Draft" ATRAS report and submitted paper
+# "output/17-05-08 14-34-51 v2.2" Resubmitted paper
 
 # set to empty to run things a fresh. Manually enter file name tag to 
 # regenerate old results. loadFileTag has the structure of date and time +
 # a file tag " Input.R" and " Results.R" are appended later.
 
-loadVars <- TRUE    # set to FALSE to run things a fresh.
-loadResults <- TRUE # set to FALSE to run things a fresh. If TRUE a 
+loadVars <- FALSE    # set to FALSE to run things a fresh.
+loadResults <- FALSE # set to FALSE to run things a fresh. If TRUE a 
                      # corresponding input file needs to exist and is 
                      # loaded as well.
 
-useSeed <- TRUE  # use seed in loadVars file to get exactly the same 
+useSeed <- FALSE  # use seed in loadVars file to get exactly the same 
                   # results.
 
 saveFileTag <- " v2.2"  # tag for output file names to specify
                               # scenarios
-saveVars <- FALSE       # save input parameters so they can be loaded
+saveVars <- TRUE       # save input parameters so they can be loaded
                         # separately
-saveResults <- FALSE    # if TRUE saveVars is assumed TRUE as well. 
+saveResults <- TRUE    # if TRUE saveVars is assumed TRUE as well. 
 
 # Check if output directories exist and create if necessary
 if (!file.exists(outputFolder)){dir.create(file.path("./", outputFolder))}
@@ -356,7 +355,7 @@ if (!loadVars && !loadResults){
   
   # Discounting rate
   discRate <- 0.05       # discounting rate
-  timeTreat <- c(4, 5)   # time between infection and treatment where 
+  timeTreat <- c(2, 4)   # time between infection and treatment where 
                          # discounting would occur 
                          # Supplementary results use c(2, 4)
   
@@ -487,15 +486,15 @@ for fourth and higher lines of drugs. Multiplying the values for each drug
 class and summing produces the undiscounted treatment cost. To
 account for all uncertainties in time on each treatment class and drug
 costs we assume a range of $\pm$ 25% in the overall undiscounted cost. 
-Finally we added the annual monitoring cost ranging from \$3,000 to $5,000 
+Finally, we added the annual monitoring cost ranging from \$3,000 to $5,000
 as described in footnote 4 to produce the undiscounted cost presented here.
 
 7. To discount future costs of providing ART to people ineligible for 
 Medicare and those who become infected we apply a discount rate of 5% from
 the year of enrollment in ATRAS for all treatment costs. For discounting 
-purposes we include the time between infection and initiating ART, we 
+purposes, we include the time between infection and initiating ART, we 
 estimated this from data on the CD4 count at initiating therapy and 
-estimates for the rate of CD4 decline. In recent years participants in the
+estimates for the rate of CD4 decline. In recent years, participants in the
 AHOD cohort have initiated ART at around 350 cells per $\mu$L 
 [@petoumenos2013australian], it is estimated it takes 4.4 years for a 
 person to reach this CD4 count post infection [@jansson2015inferring]. We 
@@ -565,6 +564,8 @@ costartvec <-  runif(numsims, artcost[1], artcost[2])
 costlifevec <- runif(numsims, lifecostRange[1], lifecostRange[2])
 costUncertainvec <- runif(numsims, 1 - costUncertainty, 
                           1 + costUncertainty)
+monitoringcostUncertainvec <- runif(numsims, monitoringCostLower, 
+                          monitoringCostUpper)
 timeTreatVec <- runif(numsims, timeTreat[1], timeTreat[2])
 
 ```
@@ -781,11 +782,16 @@ if (!loadResults){
   
   # Discounted costs - Need to loop through each line of newinfections to
   # account for the different startyears
+  
+  totalLifeYears * c(monitoringCostLower, monitoringCostUpper)
+  
   simCostsDisc <- rep(0, nrow(newinfections))
   for (ii in 1:nrow(newinfections)){
     
-    simCostsDisc[ii] <-sum(discountcosts(lifecostYearly  *              
-      costUncertainvec[newinfections$paramset[ii]], discRate, 
+    simCostsDisc[ii] <-sum(discountcosts(lifecostYearly *              
+      costUncertainvec[newinfections$paramset[ii]] +
+        monitoringcostUncertainvec[newinfections$paramset[ii]], 
+      discRate, 
       newinfections$year[ii], timeTreatVec[newinfections$paramset[ii]]))
   }
   
@@ -951,7 +957,8 @@ The impact of expanding ATRAS to all Medicare ineligibles and achieving
 almost universal viral suppression is to reduce annual new infections to a
 median of `r median(endinfects)` (IQR:
 `r median(endinfects)-IQR(endinfects)/2` - 
-`r median(endinfects)+IQR(endinfects)/2`) after `r ` years (Figure 1). 
+`r median(endinfects)+IQR(endinfects)/2`) after `r runyears-1` years
+(Figure 1). 
 This corresponds to 
 `r round(100*median(endinfects)/median(popsizemat[,5]),)`% of the Medicare
 ineligible population. 
@@ -1179,14 +1186,14 @@ summaryResults[7, ] <- c("Cost providing ART (discounted 5%)",
              money = TRUE))
 
 summaryResults[8, ] <- c("Lifetime care and ART costs (discounted 5%)", 
-  FormatData(medacost, 
-             medacost-iqracost/2, 
-             medacost+iqracost/2, 
+  FormatData(medlbcostdisc, 
+             medlbcostdisc-iqrlbcostdisc/2, 
+             medlbcostdisc+iqrlbcostdisc/2, 
              places = -4,
              money = TRUE),
-  FormatData(medacost, 
-             medacost-iqracost/2, 
-             medacost+iqracost/2, 
+  FormatData(medlacostdisc, 
+             medlacostdisc-iqrlacostdisc/2, 
+             medlacostdisc+iqrlacostdisc/2, 
              places = -4,
              money = TRUE))
 
@@ -1249,7 +1256,7 @@ infections gives a median saving of
 `r FormatData(medsaving, places = -4, money = TRUE)` 
 (IQR: 
 `r FormatData(medsaving - iqrsaving/2, places = -4, money = TRUE)` - 
-`r FormatData(medsaving + iqrsaving/2, places = -4, money = TRUE)`); 
+`r FormatData(medsaving + iqrsaving/2, places = -4, money = TRUE)`; 
 Figure 3) in the lifetime treatment costs for newly infected people. When 
 discounting is taken into account, the costs of providing ART reduce to a 
 median 
