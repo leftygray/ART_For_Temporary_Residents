@@ -355,7 +355,7 @@ if (!loadVars && !loadResults){
   
   # Discounting rate
   discRate <- 0.05       # discounting rate
-  timeTreat <- c(2, 4)   # time between infection and treatment where 
+  timeTreat <- c(4, 5)   # time between infection and treatment where 
                          # discounting would occur 
                          # Supplementary results use c(2, 4)
   
