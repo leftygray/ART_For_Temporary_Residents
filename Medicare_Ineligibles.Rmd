@@ -69,7 +69,7 @@ currTime <- format(Sys.time(), "%y-%m-%d %H-%M-%S") # for appending to
 # specifify the file to load. This is set up so long simulation runs do not
 # need to be repeated to generate the dcoument. 
 
-loadFileTag <-  "output/17-05-07 21-48-03 v2.2" 
+loadFileTag <-  "output/17-05-07 22-04-59 v2.2" 
 # "output/17-05-07 22-04-59 v2.2" Supplementary results short time between infection and diagnosis
 # "output/17-05-07 21-48-03 v2.2" Resubmitted paper
 # "output/15-03-13 13-15-17 v2.1 Draft" ATRAS report and submitted paper
@@ -444,7 +444,7 @@ upper 95% confidence interval was 0.84, 0.88, and 0.97 per 100 couple-years
 for MSM, heterosexual males, and heterosexual females respectively) 
 [@rodger2016sexual]. 
 
-5.At enrollment, 83% of the ATRAS cohort on ART are taking 
+5. At enrollment, 83% of the ATRAS cohort on ART are taking 
 Tenofovir/Emtrcitabine (Truvada) as the 'backbone' of their regime. This 
 means the vast majority of those on treatment are taking first-line drugs.
 For this analysis, we assume all patients are on and remain on first-line 
@@ -456,7 +456,7 @@ estimated in Schneider et al. by CD4 count. Annual medical care and
 infection monitoring for HIV+ people with CD4 $\ge$ 500 cells/$\mu$L, 
 CD4 350-499 cells/$\mu$L, CD4 $\ge$ 200-349 cells/$\mu$L, and CD4 < 200 
 cells/$\mu$L was estimated to equal A\$3,097, \$4,402, \$4,762, and
-\$7,883, respectively. In recent years patients in the AHOD cohort have 
+\$7,883, respectively. In recent years, patients in the AHOD cohort have 
 initiated ART at around 350 cells per $\mu$L [@petoumenos2013australian]. 
 We therefore assume all patients have a CD4 count $\ge$ 200 cells/$\mu$L 
 and the associted annual monitoring costs to range from \$3,000 to $5,000. 
@@ -1146,16 +1146,19 @@ summaryResults[4, ] <- c("Cost providing ART (undiscounted)",
   FormatData(medacost, 
              medacost-iqracost/2, 
              medacost+iqracost/2, 
+             places = -4,
              money = TRUE))
 
 summaryResults[5, ] <- c("Lifetime care and ART costs (undiscounted)", 
   FormatData(medlbcost, 
              medlbcost-iqrlbcost/2, 
              medlbcost+iqrlbcost/2, 
+             places = -4,
              money = TRUE),
   FormatData(medlacost, 
              medlacost-iqrlacost/2, 
              medlacost+iqrlacost/2, 
+             places = -4,
              money = TRUE))
 
 summaryResults[6, ] <- c("Reduction in lifetime ART costs (undiscounted)", 
@@ -1163,24 +1166,28 @@ summaryResults[6, ] <- c("Reduction in lifetime ART costs (undiscounted)",
   FormatData(medsaving, 
              medsaving-iqrsaving/2, 
              medsaving+iqrsaving/2, 
+             places = -4,
              money = TRUE))
 
 # Discounted costs
-summaryResults[7, ] <- c("Cost providing ART(discounted 5%)", 
+summaryResults[7, ] <- c("Cost providing ART (discounted 5%)", 
   "NA",
   FormatData(medacostdisc, 
              medacostdisc-iqracostdisc/2, 
              medacostdisc+iqracostdisc/2, 
+             places = -4,
              money = TRUE))
 
 summaryResults[8, ] <- c("Lifetime care and ART costs (discounted 5%)", 
   FormatData(medacost, 
              medacost-iqracost/2, 
              medacost+iqracost/2, 
+             places = -4,
              money = TRUE),
   FormatData(medacost, 
              medacost-iqracost/2, 
              medacost+iqracost/2, 
+             places = -4,
              money = TRUE))
 
 summaryResults[9, ] <- c("Reduction in lifetime ART costs (discounted 5%)",
@@ -1188,6 +1195,7 @@ summaryResults[9, ] <- c("Reduction in lifetime ART costs (discounted 5%)",
   FormatData(medsavingdisc, 
              medsavingdisc-iqrsavingdisc/2, 
              medsavingdisc+iqrsavingdisc/2, 
+             places = -4,
              money = TRUE))
 
 # Final colume names
@@ -1199,7 +1207,8 @@ colnames(summaryResults) <- c("Indicator",
  
 **Table 2** - Summary results for status-quo scenario and the expanded 
 access scenario. The results show the median and inter-quartile range (IQR)
-of all simulations for each scenario. NA = not applicable.
+of all simulations for each scenario. NA = not applicable. Costs are 
+rounded to the nearest $10,000
 
 ```{r inserttable1, echo=FALSE, messages = FALSE, warning = FALSE, results = "asis"}
 kable(summaryResults, align = c("l", "c", "c"))
