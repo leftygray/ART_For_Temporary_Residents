@@ -30,6 +30,6 @@ The following publications are associated with this project and used the code in
 <br></br>
 - RT Gray, J Watson, AJ Cogle, DE Smith, JF Hoy, LA Bastian, R Finlayson, FM Drummond, B Whittaker, MG Law, K Petoumenos. Funding ART for HIV-positive residents in Australia prevents transmission and is inexpensive. _Under review_.
   - Submitted paper based on version [version 2.1](https://github.com/leftygray/ART_For_Temporary_Residents/tree/v2.1); doi:[10.5281/zenodo.48990](https://doi.org/10.5281/zenodo.48990)
-  - Published paper based on version 2.2
+  - Final paper based on version 2.2
   - The supplementary material for this paper consists of the files Medicare_Ineligibles.Rmd, docs/Medicare_Ineligibles-Report.docx, and docs/Medicare_Ineligibles-Supplementary_results.docx
   - Raw result files are available on request (Rgray@kirby.unsw.edu.au)
