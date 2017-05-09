@@ -458,7 +458,7 @@ cells/$\mu$L was estimated to equal A\$3,097, \$4,402, \$4,762, and
 \$7,883, respectively. In recent years, patients in the AHOD cohort have 
 initiated ART at around 350 cells per $\mu$L [@petoumenos2013australian]. 
 We therefore assume all patients have a CD4 count $\ge$ 200 cells/$\mu$L 
-and the associted annual monitoring costs to range from \$3,000 to $5,000. 
+and the associated annual monitoring costs to range from \$3,000 to $5,000.
 Using these values, we assume a range in the annual
 ART cost (including monitoring) of \$`r FormatData(artcost[1], places = 0)`
 to \$`r FormatData(artcost[2], places = 0)`.
