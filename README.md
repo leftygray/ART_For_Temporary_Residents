@@ -2,6 +2,8 @@
 
 This project uses a simple analysis to calculate the impact of providing anti-retroviral therapy (ART) to people living with HIV (PLHIV) in Australia who are medicare ineligible. The analysis uses data from the Australian HIV Observational Database Temporary Residents Access Study (ATRAS). 
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.573028.svg)](https://doi.org/10.5281/zenodo.573028)
+
 **Repository owner:** Richard T. Gray
 
 **ORCID ID:** orcid.org/0000-0002-2885-0483
