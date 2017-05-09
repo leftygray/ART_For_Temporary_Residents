@@ -2,6 +2,8 @@
 
 This project uses a simple analysis to calculate the impact of providing anti-retroviral therapy (ART) to people living with HIV (PLHIV) in Australia who are medicare ineligible. The analysis uses data from the Australian HIV Observational Database Temporary Residents Access Study (ATRAS). 
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.573028.svg)](https://doi.org/10.5281/zenodo.573028)
+
 **Repository owner:** Richard T. Gray
 
 **ORCID ID:** orcid.org/0000-0002-2885-0483
@@ -24,10 +26,10 @@ The following publications are associated with this project and used the code in
 
 - The Kirby Institute. The Australian HIV Observational Database Temporary Residents Access Study (ATRAS) Two year follow-up. 2015. The Kirby Institute, UNSW Australia, Sydney NSW 2052.
   - [Released March 2015](https://kirby.unsw.edu.au/publications/australian-hiv-observational-database-temporary-residents-access-study-atras-mar-2015) and available from the Kirby Institute website ([pdf](https://kirby.unsw.edu.au/sites/default/files/AHOD_ATRAS%20Report%20Vol.%202%202015.pdf))
-  - The results in this report were produced using [version 2.1](https://github.com/leftygray/ART_For_Temporary_Residents/tree/v2.1); doi:[10.5281/zenodo.48990](https://doi.org/10.5281/zenodo.48990)
+  - The results in this report were produced using [version 2.1](https://github.com/leftygray/ART_For_Temporary_Residents/releases/tag/v2.1); doi:[10.5281/zenodo.48990](https://doi.org/10.5281/zenodo.48990)
 <br></br>
 - RT Gray, J Watson, AJ Cogle, DE Smith, JF Hoy, LA Bastian, R Finlayson, FM Drummond, B Whittaker, MG Law, K Petoumenos. Funding ART for HIV-positive residents in Australia prevents transmission and is inexpensive. _Under review_.
-  - Submitted paper based on version [version 2.1](https://github.com/leftygray/ART_For_Temporary_Residents/tree/v2.1); doi:[10.5281/zenodo.48990](https://doi.org/10.5281/zenodo.48990)
-  - Final paper based on version 2.2
+  - Submitted paper based on version [version 2.1](https://github.com/leftygray/ART_For_Temporary_Residents/tree/v2.1); doi:[10.5281/zenodo.573028](https://doi.org/10.5281/zenodo.573028)
+  - Final paper based on [version 2.2](https://github.com/leftygray/ART_For_Temporary_Residents/releases/tag/v2.2); doi: []()
   - The supplementary material for this paper consists of the files Medicare_Ineligibles.Rmd, docs/Medicare_Ineligibles-Report.docx, and docs/Medicare_Ineligibles-Supplementary_results.docx
   - Raw result files are available on request (Rgray@kirby.unsw.edu.au)
