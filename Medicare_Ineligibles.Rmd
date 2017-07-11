@@ -1038,10 +1038,10 @@ costplot <- ggplot(data = costsSum3,
   stat_summary(fun.data = "median_hilow", fun.args = list(conf.int = 0.5),
                geom = "errorbar", width = 0.2, size = 1.1) +
   xlab("") + ylab("Millions AUD") + 
-  scale_x_discrete(labels = c("Cost of \n providing \n ART", 
-    "Reduction \n in lifetime \n ART costs",
-    "Cost of \n providing \n ART \n (discounted)",
-    "Reduction \n in lifetime \n ART costs \n (discounted)")) + 
+  scale_x_discrete(labels = c("Cost of \n providing \n care and ART", 
+    "Reduction \n in lifetime \n care and ART costs",
+    "Cost of \n providing \n care and ART \n (discounted)",
+    "Reduction \n in lifetime \n care and ART costs \n (discounted)")) + 
   ylim(0, 120) + geom_vline(aes(xintercept = 2.5), 
                             linetype = "longdash") +
   annotate("text", x = 1.5, y = 100, label = "No discounting") + 
@@ -1148,7 +1148,7 @@ summaryResults[3, ] <- c("Infections averted",
              places = 1))
 
 # Undiscounted costs
-summaryResults[4, ] <- c("Cost providing ART (undiscounted)", 
+summaryResults[4, ] <- c("Cost providing care and ART (undiscounted)", 
   "NA",
   FormatData(medacost, 
              medacost-iqracost/2, 
@@ -1168,7 +1168,7 @@ summaryResults[5, ] <- c("Lifetime care and ART costs (undiscounted)",
              places = -4,
              money = TRUE))
 
-summaryResults[6, ] <- c("Reduction in lifetime ART costs (undiscounted)", 
+summaryResults[6, ] <- c("Reduction in lifetime care and ART costs (undiscounted)", 
   "NA",
   FormatData(medsaving, 
              medsaving-iqrsaving/2, 
@@ -1177,7 +1177,7 @@ summaryResults[6, ] <- c("Reduction in lifetime ART costs (undiscounted)",
              money = TRUE))
 
 # Discounted costs
-summaryResults[7, ] <- c("Cost providing ART (discounted 5%)", 
+summaryResults[7, ] <- c("Cost providing care and ART (discounted 5%)", 
   "NA",
   FormatData(medacostdisc, 
              medacostdisc-iqracostdisc/2, 
@@ -1197,7 +1197,7 @@ summaryResults[8, ] <- c("Lifetime care and ART costs (discounted 5%)",
              places = -4,
              money = TRUE))
 
-summaryResults[9, ] <- c("Reduction in lifetime ART costs (discounted 5%)",
+summaryResults[9, ] <- c("Reduction in lifetime care and ART costs (discounted 5%)",
   "NA",
   FormatData(medsavingdisc, 
              medsavingdisc-iqrsavingdisc/2, 

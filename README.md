@@ -4,6 +4,9 @@ This project uses a simple analysis to calculate the impact of providing anti-re
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.573028.svg)](https://doi.org/10.5281/zenodo.573028)
 
+All calculations are primarily conducted using R with associated packages (gridExtra; knitr; Hmisc; Formula; survival; lattice; RColorBrewer; scale; ggplot2; readxl; tidyr; dplyr; readr). 
+Please report an issue if you want to run the code or contact Rgray@kirby.unsw.edu.au.
+
 **Repository owner:** Richard T. Gray
 
 **ORCID ID:** orcid.org/0000-0002-2885-0483
@@ -29,7 +32,7 @@ The following publications are associated with this project and used the code in
   - The results in this report were produced using [version 2.1](https://github.com/leftygray/ART_For_Temporary_Residents/releases/tag/v2.1); doi:[10.5281/zenodo.48990](https://doi.org/10.5281/zenodo.48990)
 <br></br>
 - RT Gray, J Watson, AJ Cogle, DE Smith, JF Hoy, LA Bastian, R Finlayson, FM Drummond, B Whittaker, MG Law, K Petoumenos. Funding ART for HIV-positive residents in Australia prevents transmission and is inexpensive. _Under review_.
-  - Submitted paper based on version [version 2.1](https://github.com/leftygray/ART_For_Temporary_Residents/tree/v2.1); doi:[10.5281/zenodo.48990](https://doi.org/10.5281/zenodo.48990)
+  - Submitted paper based on [version 2.1](https://github.com/leftygray/ART_For_Temporary_Residents/tree/v2.1); doi:[10.5281/zenodo.48990](https://doi.org/10.5281/zenodo.48990)
   - Final paper based on [version 2.2](https://github.com/leftygray/ART_For_Temporary_Residents/releases/tag/v2.2); doi:[10.5281/zenodo.573028](https://doi.org/10.5281/zenodo.573028)
   - The supplementary material for this paper consists of the files Medicare_Ineligibles.Rmd, docs/Medicare_Ineligibles-Report.docx, and docs/Medicare_Ineligibles-Supplementary_results.docx
   - Raw result files are available on request (Rgray@kirby.unsw.edu.au)
